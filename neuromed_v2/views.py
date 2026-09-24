@@ -1,5 +1,57 @@
+from pathlib import Path
+
+from django.contrib.staticfiles.storage import staticfiles_storage
+from django.http import FileResponse, JsonResponse
+from django.shortcuts import redirect
 from django.views.generic import TemplateView
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class HomeView(TemplateView):
     template_name = "home.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        # Signed-in patients land in the product, not the marketing page.
+        if request.user.is_authenticated:
+            return redirect("visits:record")
+        return super().dispatch(request, *args, **kwargs)
+
+
+def web_manifest(request):
+    """Serve the PWA manifest with resolved static icon URLs (works in prod)."""
+    icon_192 = staticfiles_storage.url("img/icons/icon-192.png")
+    icon_512 = staticfiles_storage.url("img/icons/icon-512.png")
+    payload = {
+        "name": "Aira — NeuroMed",
+        "short_name": "Aira",
+        "description": (
+            "Understand, remember, and act on what happened at the doctor "
+            "— for patients and families."
+        ),
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait-primary",
+        "background_color": "#0b2545",
+        "theme_color": "#0b2545",
+        "lang": "en",
+        "categories": ["health", "medical", "lifestyle"],
+        "icons": [
+            {"src": icon_192, "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": icon_512, "sizes": "512x512", "type": "image/png", "purpose": "any"},
+            {"src": icon_512, "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+        ],
+    }
+    response = JsonResponse(payload)
+    response["Content-Type"] = "application/manifest+json"
+    return response
+
+
+def service_worker(request):
+    path = BASE_DIR / "static" / "js" / "sw.js"
+    response = FileResponse(path.open("rb"), content_type="application/javascript; charset=utf-8")
+    # Allow controlling the whole origin, not only /static/.
+    response["Service-Worker-Allowed"] = "/"
+    response["Cache-Control"] = "no-cache"
+    return response

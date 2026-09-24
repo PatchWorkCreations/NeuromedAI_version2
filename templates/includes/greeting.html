@@ -1,0 +1,5 @@
+{% if aira_greeting %}
+<p class="user-greeting{% if aira_greeting.welcome %} user-greeting--welcome{% endif %}" aria-live="polite">
+  {{ aira_greeting.headline }}
+</p>
+{% endif %}

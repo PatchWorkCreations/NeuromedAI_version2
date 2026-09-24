@@ -16,14 +16,14 @@ Aira captures a doctor's visit, explains it in plain language and the patient's 
 | Media storage | Cloud object storage — **host TBD** | Audio chunks (transient) and uploaded documents. Must sit on the same BAA-covered cloud host as Postgres so the compliance story stays in one place |
 | Translation | Real contracted vendor — **TBD, replaces v1's deep-translator/langdetect** | Multilingual reach is a core differentiator; the free-tier wrapper library v1 used is a reliability and compliance risk at that load-bearing a role |
 | Web payments | Square | Reused from v1 |
-| iOS payments | Apple StoreKit — **only if a native iOS app ships** | Not required at all if iOS ships as a PWA; see open decision below |
+| iOS payments | Not used — PWA only | StoreKit stays out unless a native iOS decision is reopened |
 | Auth | Django auth + Google OAuth + Microsoft MSAL | Reused from v1 |
 | Deployment | Procfile + gunicorn + whitenoise (Heroku/Railway-style) | Reused pattern from v1 |
 
 ## Open decisions this architecture assumes will get answered early
 
-- **PWA vs. native iOS**, specifically because of the recording feature's need for reliable microphone capture in the background (Safari PWAs on iOS cannot record once the screen locks or the app loses focus). Current lean from planning: a thin native app for the recording flow, PWA for everything else. This decision determines whether the `billing` app needs any StoreKit code at all — resolve it before that app is scaffolded.
-- **Cloud host** for Postgres + media storage. Needs to be chosen before the OpenAI BAA is signed, since both should be on BAA-covered, encryption-audited infrastructure together.
+- **Client shape: PWA (decided).** Aira ships as an installable Progressive Web App — no native iOS shell and no StoreKit in `billing`. Known constraint: Safari PWAs cannot keep recording once the screen locks or the app loses focus; the Record UI should warn patients to keep the screen awake during a visit. Revisit only if pilot data shows that constraint blocks real visits.
+- **Cloud host: Railway (decided for this build).** Production Postgres via Railway’s Postgres plugin (`DATABASE_URL`). Media/object storage for audio + uploads still needs a Railway volume or an S3-compatible bucket on the same compliance story — wire that before pilot patient files are stored. Local and production databases are PostgreSQL only (see CLAUDE.md boundary #6) — never SQLite.
 - **Translation vendor.**
 
 ## App structure

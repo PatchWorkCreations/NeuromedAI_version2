@@ -3,24 +3,33 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}Aira — understand your visit{% endblock %}</title>
   <meta name="description" content="Aira helps you and your family understand, remember, and act on what happened at the doctor.">
+  <meta name="theme-color" content="#0b2545">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Aira">
+  <link rel="manifest" href="{% url 'web_manifest' %}">
   <link rel="icon" type="image/png" href="{% static 'img/aira-wordmark.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/icons/apple-touch-icon.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600;700&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,600&family=Inter:wght@300;400;500;600;700&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/aira.css' %}">
   <link rel="stylesheet" href="{% static 'css/shell.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body{% if user.is_authenticated %} class="authed-app"{% endif %}>
   {% include "includes/header.html" %}
   <main id="main">
     {% block content %}{% endblock %}
   </main>
   {% include "includes/footer.html" %}
+  <script src="{% static 'js/select.js' %}"></script>
   <script src="{% static 'js/shell.js' %}"></script>
+  <script src="{% static 'js/pwa.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,0 +1,2 @@
+# Force Python 3.12 on Railway/Nixpacks (Django 5 requires >=3.10).
+pythonVersion = "3.12"

@@ -11,6 +11,9 @@ structured Visit Summary. The two things that are NEW relative to v1:
    safety.engine.check_escalation() before it's returned to the client
    (boundary #2) — this did not exist in v1.
 """
+import logging
+from io import BytesIO
+
 import openai
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -27,6 +30,8 @@ from safety.engine import check_escalation, log_escalation
 from .consent import CONSENT_TEXT, CONSENT_TEXT_VERSION
 from .models import ConsentRecord, VisitRecording
 
+logger = logging.getLogger(__name__)
+
 VISIT_SUMMARY_PROMPT = (
     "I recorded my doctor visit. Below is the transcript. Please give me a "
     "clear \"Visit Summary\" in plain language with these sections: "
@@ -34,6 +39,12 @@ VISIT_SUMMARY_PROMPT = (
     "Follow-up / next steps. Then add a short list of questions I should "
     "ask at my next visit.\n\n--- VISIT TRANSCRIPT ---\n{transcript}"
 )
+
+
+def _openai_client():
+    if not settings.OPENAI_API_KEY:
+        return None
+    return openai.OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 @api_view(["GET"])
@@ -69,26 +80,60 @@ def start_visit(request):
     return Response({"visit_id": visit.id})
 
 
+def _sniff_audio_filename(raw: bytes, uploaded_name: str) -> str:
+    """
+    MediaRecorder MIME/extension can disagree with the bytes. Whisper keys
+    off the filename suffix, so correct it from magic bytes when we can.
+    """
+    name = (uploaded_name or "chunk.webm").rsplit("/", 1)[-1]
+    lower = name.lower()
+    if raw.startswith(b"RIFF") and b"WAVE" in raw[:16]:
+        return "chunk.wav"
+    if raw.startswith(b"OggS"):
+        return "chunk.ogg"
+    if raw.startswith(b"fLaC"):
+        return "chunk.flac"
+    if len(raw) > 8 and raw[4:8] == b"ftyp":
+        return "chunk.mp4"
+    if raw.startswith(b"\x1a\x45\xdf\xa3"):
+        return "chunk.webm"
+    if lower.endswith((".webm", ".wav", ".mp3", ".mp4", ".m4a", ".ogg", ".oga", ".mpeg", ".mpga", ".flac")):
+        return name
+    return "chunk.webm"
+
+
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def voice_transcribe(request):
     """
-    Ported from v1's myApp/voice_ai.py transcribe_audio_b64 — chunked,
-    6-second-segment transcription via OpenAI Whisper. TODO: port the
-    base64-decode / temp-file / whisper-1 call itself once this app is
-    wired into a real dev environment with OPENAI_API_KEY set.
+    Ported from v1's myApp/voice_ai.py — chunked transcription via Whisper.
+    Each upload must be a complete audio container (not a MediaRecorder
+    timeslice fragment without headers).
     """
     audio = request.FILES.get("audio")
     if not audio:
         return Response({"text": "", "error": "audio is required"}, status=400)
-    if not settings.OPENAI_API_KEY:
+
+    client = _openai_client()
+    if client is None:
         return Response({"text": "", "error": "OPENAI_API_KEY is not set"}, status=503)
-    if not getattr(audio, "name", None):
-        audio.name = "chunk.webm"
-    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-    result = client.audio.transcriptions.create(model="whisper-1", file=audio)
-    return Response({"text": result.text})
+
+    raw = audio.read()
+    if len(raw) < 1000:
+        # Incomplete / empty MediaRecorder fragments — skip quietly.
+        return Response({"text": ""})
+
+    payload = BytesIO(raw)
+    payload.name = _sniff_audio_filename(raw, getattr(audio, "name", "") or "")
+
+    try:
+        result = client.audio.transcriptions.create(model="whisper-1", file=payload)
+    except openai.OpenAIError as exc:
+        logger.warning("Whisper transcription failed: %s", exc)
+        return Response({"text": "", "error": "Couldn’t transcribe that audio chunk."}, status=502)
+
+    return Response({"text": result.text or ""})
 
 
 @csrf_exempt
@@ -100,19 +145,46 @@ def summarize_visit(request, visit_id):
     v1 — always runs the draft through the safety layer before it goes
     back to the client.
     """
-    visit = VisitRecording.objects.get(pk=visit_id)
-    transcript = request.data.get("transcript", visit.transcript)
-    visit.transcript = transcript
+    visit = get_object_or_404(VisitRecording, pk=visit_id)
+    if request.user.is_authenticated and visit.user_id and visit.user_id != request.user.id:
+        return Response({"error": "Not found"}, status=404)
 
-    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-    completion = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are NeuroMed Aira, a clinical-grade medical communication assistant."},
-            {"role": "user", "content": VISIT_SUMMARY_PROMPT.format(transcript=transcript)},
-        ],
-    )
-    draft_summary = completion.choices[0].message.content
+    transcript = (request.data.get("transcript") or visit.transcript or "").strip()
+    if not transcript:
+        return Response(
+            {"error": "No transcript yet. Keep recording a bit longer, then try Stop & summarize again."},
+            status=400,
+        )
+
+    visit.transcript = transcript
+    visit.save(update_fields=["transcript"])
+
+    client = _openai_client()
+    if client is None:
+        return Response({"error": "OPENAI_API_KEY is not set"}, status=503)
+
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are NeuroMed Aira, a clinical-grade medical communication "
+                        "assistant for patients and families. Explain clearly in plain "
+                        "language. Do not invent details that are not in the transcript."
+                    ),
+                },
+                {"role": "user", "content": VISIT_SUMMARY_PROMPT.format(transcript=transcript)},
+            ],
+        )
+        draft_summary = (completion.choices[0].message.content or "").strip()
+    except openai.OpenAIError as exc:
+        logger.exception("Visit summary generation failed for visit %s", visit_id)
+        return Response({"error": f"Summary failed: {exc}"}, status=502)
+
+    if not draft_summary:
+        return Response({"error": "The model returned an empty summary. Please try again."}, status=502)
 
     escalation = check_escalation(user_message=transcript, draft_response=draft_summary)
     if escalation:
@@ -126,7 +198,13 @@ def summarize_visit(request, visit_id):
         visit.status = VisitRecording.Status.SUMMARIZED
         visit.ended_at = timezone.now()
         visit.save()
-        return Response({"summary": escalation.response_text, "escalated": True, "category": escalation.category})
+        return Response(
+            {
+                "summary": escalation.response_text,
+                "escalated": True,
+                "category": escalation.category,
+            }
+        )
 
     visit.summary = draft_summary
     visit.status = VisitRecording.Status.SUMMARIZED

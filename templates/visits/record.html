@@ -6,8 +6,10 @@
 {% block content %}
 <section class="app-page">
   <header class="app-page__head">
+    {% include "includes/greeting.html" %}
     <h1>Record a visit</h1>
     <p>Consent first. Then the microphone. You can stop at any time.</p>
+    <p class="app-page__note">Keep this screen awake while recording — phones may pause capture if they sleep or you leave the app.</p>
   </header>
 
   <div id="consent-step" class="consent-card">
@@ -28,7 +30,7 @@
 </section>
 <script>
   window.AIRA_VISIT = {
-    startUrl: "{% url 'visits:start' %}",
+    startUrl: "{% url 'visits:start_visit' %}",
     transcribeUrl: "{% url 'visits:voice_transcribe' %}",
     csrf: "{{ csrf_token }}"
   };

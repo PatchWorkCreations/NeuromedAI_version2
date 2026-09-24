@@ -29,8 +29,9 @@ Sign-up, log-in, Google, record (consent first), chat, visit history, and docume
 - [x] Whisper transcription endpoint (needs `OPENAI_API_KEY`)
 - [x] Chat screen
 - [x] After-visit summary page
-- [ ] Local **Postgres** database `neuromed_v2` created + `migrate` run
+- [x] Local **Postgres** database `neuromed_v2` created + `migrate` run
 - [ ] Local Google OAuth client (localhost / 127.0.0.1 callback) in `.env`
+- [x] **PWA** shell (manifest + service worker + install icons)
 
 ---
 
@@ -77,7 +78,7 @@ Sign-up, log-in, Google, record (consent first), chat, visit history, and docume
 
 - [ ] Square checkout (Plus: care-circle, extended history, voice narration only)
 - [x] Never gate record + summarize
-- [ ] StoreKit **only if** native iOS is chosen — do not scaffold it speculatively
+- [x] StoreKit **not used** — PWA decision means no Apple IAP path unless native iOS is reopened
 
 ### `compliance`
 
@@ -96,8 +97,8 @@ Sign-up, log-in, Google, record (consent first), chat, visit history, and docume
 
 From `ARCHITECTURE.md`. Do not guess a vendor in code.
 
-- [ ] **PWA vs thin native iOS** for recording (Safari PWA cannot record when the screen locks). Leaning: native for record, PWA for the rest. This decides StoreKit.
-- [ ] **Cloud host** for Postgres + media (audio, uploads). Same BAA-covered host as production DB.
+- [x] **PWA** (installable web app). No StoreKit. Note Safari cannot record with the screen locked.
+- [x] **Cloud host: Railway** for app + Postgres. Media bucket/volume for audio/uploads still to wire.
 - [ ] **Translation vendor** — replaces v1’s deep-translator. Blocks care-circle invites/digests.
 
 ---
@@ -114,13 +115,15 @@ Internal / dummy data does **not** need these. Real patients do, before their da
 
 ---
 
-## Deploy (`airamed.neuromedai.org`)
+## Deploy (Railway)
 
-- [ ] Host + `DATABASE_URL` + env on the subdomain
-- [ ] Google OAuth origin + redirect: `https://airamed.neuromedai.org` and `https://airamed.neuromedai.org/accounts/google/callback/` (same Neuromed project; do not put localhost on the production client)
-- [ ] `ALLOWED_HOSTS` + `CSRF_TRUSTED_ORIGINS` for the subdomain
-- [ ] HTTPS
-- [ ] `DEBUG=False`, real `SECRET_KEY`
+- [x] `Procfile` + `railway.toml` (gunicorn, migrate, collectstatic)
+- [ ] Railway project + Postgres plugin → `DATABASE_URL`
+- [ ] Env: `DEBUG=False`, `SECRET_KEY`, `OPENAI_API_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`
+- [ ] Custom domain / `airamed.neuromedai.org` DNS → Railway
+- [ ] Google OAuth origin + redirect for the production URL
+- [ ] Media storage (Railway volume or S3) for audio/uploads
+- [ ] HTTPS (Railway provides this on `*.up.railway.app` and custom domains)
 
 ---
 

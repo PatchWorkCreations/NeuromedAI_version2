@@ -3,41 +3,90 @@
 {% block content %}
 <section class="app-page">
   <header class="app-page__head">
+    {% include "includes/greeting.html" %}
     <h1>Documents</h1>
     <p>Lab results, discharge papers, notes from another hospital — one timeline.</p>
   </header>
-  <form class="upload-form" method="post" enctype="multipart/form-data">
+
+  {% if messages %}
+    <ul class="flash-list">
+      {% for message in messages %}
+        <li class="flash flash--{{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <form class="upload-form" method="post" enctype="multipart/form-data" id="document-upload-form">
     {% csrf_token %}
     <label>
       Kind
-      <select name="kind">
+      <select name="kind" id="document-kind" aria-label="Document kind" required>
         {% for value, label in kinds %}
-          <option value="{{ value }}">{{ label }}</option>
+          <option value="{{ value }}"{% if forloop.first %} selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </label>
     <label>
       Hospital or clinic <span class="opt">(optional)</span>
-      <input type="text" name="source_institution" placeholder="e.g. County General">
+      <input type="text" name="source_institution" placeholder="e.g. County General" maxlength="255">
     </label>
     <label>
       File
-      <input type="file" name="file" required accept=".pdf,.docx,.txt,.png,.jpg">
+      <input type="file" name="file" id="document-file" required accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,application/pdf,text/plain,image/png,image/jpeg">
+      <span class="field-hint">PDF, Word (.docx), text, PNG, or JPG — up to 15 MB.</span>
     </label>
-    <button type="submit" class="btn btn--primary">Upload</button>
+    <button type="submit" class="btn btn--primary" id="document-upload-btn">Upload</button>
   </form>
+
   <ul class="visit-list">
     {% for doc in documents %}
-      <li>
-        <strong>{{ doc.get_kind_display }}</strong>
-        <span>{{ doc.source_institution|default:"—" }} · {{ doc.uploaded_at|date:"M j, Y" }}</span>
-        {% if doc.extracted_text %}
-          <p>{{ doc.extracted_text|truncatewords:40 }}</p>
-        {% endif %}
+      <li class="visit-row">
+        <a class="visit-row__link" href="{% url 'documents:detail' doc.id %}">
+          <strong>{{ doc.get_kind_display }}</strong>
+          <span>{{ doc.source_institution|default:"—" }} · {{ doc.uploaded_at|date:"M j, Y" }}</span>
+          {% if doc.extracted_text %}
+            <p class="visit-row__preview">{{ doc.extracted_text|truncatewords:28 }}</p>
+          {% else %}
+            <p class="visit-row__preview">No readable text extracted</p>
+          {% endif %}
+        </a>
+        <form method="post" action="{% url 'documents:delete' doc.id %}" class="visit-row__delete">
+          {% csrf_token %}
+          <button
+            type="submit"
+            class="visit-row__delete-btn"
+            aria-label="Delete {{ doc.get_kind_display }}"
+            title="Delete"
+            onclick="return confirm('Remove this document from your timeline?');"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 7h16"/>
+              <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/>
+              <path d="M10 11v6M14 11v6"/>
+            </svg>
+          </button>
+        </form>
       </li>
     {% empty %}
       <li class="thread-empty">Nothing uploaded yet.</li>
     {% endfor %}
   </ul>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var form = document.getElementById("document-upload-form");
+  var btn = document.getElementById("document-upload-btn");
+  var file = document.getElementById("document-file");
+  if (!form || !btn) return;
+  form.addEventListener("submit", function () {
+    if (!file || !file.files || !file.files.length) return;
+    btn.disabled = true;
+    btn.textContent = "Uploading…";
+  });
+})();
+</script>
 {% endblock %}

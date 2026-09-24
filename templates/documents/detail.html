@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ document.get_kind_display }}{% endblock %}
+{% block content %}
+<section class="app-page">
+  <header class="app-page__head">
+    <h1>{{ document.get_kind_display }}</h1>
+    <p>
+      {{ document.source_institution|default:"Source not noted" }}
+      · {{ document.uploaded_at|date:"M j, Y" }}
+    </p>
+  </header>
+
+  {% if document.extracted_text %}
+    <article class="summary-card">{{ document.extracted_text|linebreaks }}</article>
+  {% else %}
+    <p class="thread-empty">No readable text was extracted from this file.</p>
+  {% endif %}
+
+  <div class="doc-actions">
+    <a class="btn btn--ghost" href="{% url 'documents:list' %}">Back to documents</a>
+    <form method="post" action="{% url 'documents:delete' document.id %}" onsubmit="return confirm('Remove this document from your timeline?');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--ghost">Delete</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

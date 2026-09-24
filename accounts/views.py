@@ -13,6 +13,8 @@ from .google import exchange_code, google_authorize_url, google_configured
 
 User = get_user_model()
 
+DEFAULT_POST_AUTH_REDIRECT = "visits:record"
+
 
 def _auth_context(**extra):
     ctx = {"google_ready": google_configured()}
@@ -20,24 +22,34 @@ def _auth_context(**extra):
     return ctx
 
 
+def _safe_next(request, default=DEFAULT_POST_AUTH_REDIRECT):
+    """Prefer an explicit ?next= only when it's a same-site relative path."""
+    nxt = request.GET.get("next") or request.POST.get("next") or ""
+    if nxt.startswith("/") and not nxt.startswith("//"):
+        return nxt
+    return reverse(default)
+
+
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("home")
+        return redirect(DEFAULT_POST_AUTH_REDIRECT)
     form = LoginForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
         login(request, form.get_user())
-        return redirect(request.GET.get("next") or reverse("home"))
+        request.session["aira_just_signed_in"] = True
+        return redirect(_safe_next(request))
     return render(request, "accounts/login.html", _auth_context(form=form))
 
 
 def signup_view(request):
     if request.user.is_authenticated:
-        return redirect("home")
+        return redirect(DEFAULT_POST_AUTH_REDIRECT)
     form = SignupForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()
         login(request, user)
-        return redirect("home")
+        request.session["aira_just_signed_in"] = True
+        return redirect(_safe_next(request))
     return render(request, "accounts/signup.html", _auth_context(form=form))
 
 
@@ -54,7 +66,7 @@ def google_start(request):
         return redirect("accounts:login")
     state = secrets.token_urlsafe(24)
     request.session["google_oauth_state"] = state
-    request.session["google_oauth_next"] = request.GET.get("next") or reverse("home")
+    request.session["google_oauth_next"] = request.GET.get("next") or reverse(DEFAULT_POST_AUTH_REDIRECT)
     return redirect(google_authorize_url(request, state))
 
 
@@ -97,4 +109,8 @@ def google_callback(request):
         user.save(update_fields=["password"])
 
     login(request, user)
-    return redirect(request.session.pop("google_oauth_next", None) or reverse("home"))
+    request.session["aira_just_signed_in"] = True
+    nxt = request.session.pop("google_oauth_next", None) or reverse(DEFAULT_POST_AUTH_REDIRECT)
+    if not (nxt.startswith("/") and not nxt.startswith("//")):
+        nxt = reverse(DEFAULT_POST_AUTH_REDIRECT)
+    return redirect(nxt)

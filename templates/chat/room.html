@@ -4,16 +4,17 @@
 {% block title %}Ask Aira{% endblock %}
 
 {% block content %}
-<section class="app-page">
+<section class="app-page app-page--chat">
   <header class="app-page__head">
+    {% include "includes/greeting.html" %}
     <h1>Ask Aira</h1>
     <p>About a visit, a note, or something you didn’t want to forget.</p>
   </header>
 
   <div class="tone-bar">
-    <label for="tone">Tone</label>
-    <select id="tone" name="tone">
-      <option value="auto">Auto</option>
+    <label class="tone-bar__label" for="tone" id="tone-label">Tone</label>
+    <select id="tone" name="tone" aria-labelledby="tone-label">
+      <option value="auto" selected>Auto</option>
       <option value="PlainClinical">Balanced</option>
       <option value="Caregiver">Caregiver</option>
       <option value="Faith">Faith</option>
@@ -24,20 +25,46 @@
     <button type="button" class="a11y-btn" id="chat-easy-read" aria-pressed="false">Easy Read</button>
   </div>
 
-  <div class="thread" id="thread">
-    {% for message in chat_messages %}
-      <article class="bubble bubble--{{ message.role }}">{{ message.content }}</article>
-    {% empty %}
-      <p class="thread-empty">Start with whatever is on your mind. Aira will send you back to your doctor when that’s the right next step.</p>
-    {% endfor %}
-  </div>
+  <div class="chat-shell">
+    <div
+      class="thread"
+      id="thread"
+      role="log"
+      aria-live="polite"
+      aria-relevant="additions"
+      data-aira-icon="{% static 'img/icons/aira-heart.png' %}"
+    >
+      {% for message in chat_messages %}
+        <div class="msg msg--{{ message.role }}">
+          {% if message.role == "assistant" %}
+            <span class="msg__avatar msg__avatar--aira" aria-hidden="true">
+              <img src="{% static 'img/icons/aira-heart.png' %}" alt="" width="32" height="32">
+            </span>
+            <article class="bubble bubble--assistant">{{ message.content }}</article>
+          {% else %}
+            <article class="bubble bubble--user">{{ message.content }}</article>
+            <span class="msg__avatar msg__avatar--user" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="8.2" r="3.4" fill="currentColor"/>
+                <path d="M5.2 19.2c1.1-3.2 3.6-4.8 6.8-4.8s5.7 1.6 6.8 4.8"
+                      stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                      fill="none"/>
+              </svg>
+            </span>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p class="thread-empty">Start with whatever is on your mind. Aira will send you back to your doctor when that’s the right next step.</p>
+      {% endfor %}
+    </div>
 
-  <form class="composer" id="chat-form">
-    {% csrf_token %}
-    <label class="sr-only" for="chat-message">Message</label>
-    <textarea id="chat-message" name="message" rows="2" required placeholder="Ask about the visit…"></textarea>
-    <button type="submit" class="btn btn--primary">Send</button>
-  </form>
+    <form class="composer" id="chat-form">
+      {% csrf_token %}
+      <label class="sr-only" for="chat-message">Message</label>
+      <textarea id="chat-message" name="message" rows="1" required placeholder="Ask about the visit…"></textarea>
+      <button type="submit" class="btn btn--primary composer__send">Send</button>
+    </form>
+  </div>
 </section>
 <script src="{% static 'js/chat.js' %}"></script>
 {% endblock %}

@@ -14,7 +14,7 @@ websockets==15.0.1
 asgiref==3.8.1
 
 # AI
-openai==1.51.0
+openai==1.109.1
 
 # Auth
 msal==1.31.1

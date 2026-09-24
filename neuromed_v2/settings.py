@@ -5,7 +5,6 @@ See ARCHITECTURE.md for the reasoning behind each piece of this file —
 in particular the "Open decisions" section (cloud host, translation vendor,
 PWA vs. native) before adding config for those.
 """
-import os
 from pathlib import Path
 import environ
 import dj_database_url
@@ -18,16 +17,32 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("SECRET_KEY", default="dev-only-not-secure")
 DEBUG = env.bool("DEBUG", default=False)
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
-CSRF_TRUSTED_ORIGINS = env.list(
-    "CSRF_TRUSTED_ORIGINS",
-    default=[
-        "http://127.0.0.1:8001",
-        "http://localhost:8001",
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
-    ],
-)
+
+# Hosts: local defaults, plus Railway public domain when present.
+_default_hosts = ["localhost", "127.0.0.1"]
+_railway_domain = env("RAILWAY_PUBLIC_DOMAIN", default="")
+if _railway_domain:
+    _default_hosts.append(_railway_domain)
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=_default_hosts)
+
+_default_csrf = [
+    "http://127.0.0.1:8003",
+    "http://localhost:8003",
+    "http://127.0.0.1:8001",
+    "http://localhost:8001",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+]
+if _railway_domain:
+    _default_csrf.append(f"https://{_railway_domain}")
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=_default_csrf)
+
+# Railway (and similar) terminate TLS at the proxy.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -78,6 +93,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "accounts.context_processors.greeting",
             ],
         },
     },
@@ -98,7 +114,11 @@ if not _database_url:
         "postgres://localhost:5432/neuromed_v2"
     )
 DATABASES = {
-    "default": dj_database_url.parse(_database_url, conn_max_age=600)
+    "default": dj_database_url.parse(
+        _database_url,
+        conn_max_age=600,
+        ssl_require=env.bool("DATABASE_SSL_REQUIRE", default=not DEBUG),
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -110,7 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "home"
+LOGIN_REDIRECT_URL = "visits:record"
 LOGOUT_REDIRECT_URL = "home"
 
 GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
@@ -127,14 +147,18 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# Compress for production, but avoid filename hashing so the PWA manifest
+# and service-worker shell list keep stable /static/... URLs.
 STATICFILES_STORAGE = (
     "django.contrib.staticfiles.storage.StaticFilesStorage"
     if DEBUG
-    else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    else "whitenoise.storage.CompressedStaticFilesStorage"
 )
+WHITENOISE_USE_FINDERS = DEBUG
+WHITENOISE_MANIFEST_STRICT = False
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -150,6 +174,5 @@ OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 ENABLE_CARE_CIRCLE = env.bool("ENABLE_CARE_CIRCLE", default=False)
 
 # --- Not yet wired — see ARCHITECTURE.md § Open decisions ------------------
-# Translation vendor, cloud media storage, and Apple StoreKit (native-iOS
-# only) all depend on decisions not yet made. Don't default-guess a vendor
-# here; leave unset until it's a deliberate choice.
+# Translation vendor and durable media storage (Railway volume / S3) still
+# need deliberate choices before pilot patient files or care-circle digests.
