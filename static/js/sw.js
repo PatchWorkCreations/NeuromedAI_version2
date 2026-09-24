@@ -1,11 +1,13 @@
 /* Aira PWA service worker — shell cache only.
    Network-first for pages/APIs so visit/chat data stays fresh.
    Keep the cache list small; never cache authenticated JSON responses. */
-const CACHE = "aira-shell-v12";
+const CACHE = "aira-shell-v13";
 const SHELL = [
   "/",
   "/static/css/aira.css",
   "/static/css/shell.css",
+  "/static/css/app.css",
+  "/static/js/app.js",
   "/static/js/shell.js",
   "/static/js/select.js",
   "/static/img/aira-wordmark.png",

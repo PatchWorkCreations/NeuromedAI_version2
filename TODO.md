@@ -32,6 +32,7 @@ Sign-up, log-in, Google, record (consent first), chat, visit history, and docume
 - [x] Local **Postgres** database `neuromed_v2` created + `migrate` run
 - [ ] Local Google OAuth client (localhost / 127.0.0.1 callback) in `.env`
 - [x] **PWA** shell (manifest + service worker + install icons)
+- [x] Signed-in app shell (sidebar / bottom tabs, no footer) + Home dashboard with next step
 
 ---
 
@@ -71,7 +72,10 @@ Sign-up, log-in, Google, record (consent first), chat, visit history, and docume
 ### `documents`
 
 - [x] Upload UI + PDF/DOCX text extract
-- [ ] Image OCR via pytesseract
+- [ ] Image OCR via pytesseract (photos shared in Ask Aira are read by GPT-4o vision already; text isn't saved back to the document yet)
+- [x] Chat attachments: photo, camera, PDF, Word; encrypted storage (local or Iceberg)
+- [ ] Set `DOCUMENT_ENCRYPTION_KEY`, `DOCUMENT_STORAGE=iceberg`, `ICEBERG_TOKEN` on Railway
+- [ ] Confirm with counsel: encrypted files on Iceberg/R2 without a BAA
 - [ ] Cross-institution timeline view (field exists: `UploadedDocument.source_institution`)
 
 ### `billing`

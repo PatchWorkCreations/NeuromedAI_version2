@@ -29,13 +29,23 @@ def _period(hour: int) -> str:
     return "night"
 
 
-def build_greeting(user, when: datetime | None = None, *, welcome: bool = False) -> dict:
-    """Return a stable-for-today greeting so refreshes don't reshuffle the line."""
+def build_greeting(
+    user,
+    when: datetime | None = None,
+    *,
+    welcome: bool = False,
+    first_time: bool = False,
+) -> dict:
+    """Return a stable-for-today greeting so refreshes don't reshuffle the line.
+
+    ``first_time`` is a brand-new account. Those lines say welcome, never welcome back.
+    """
     when = when or timezone.localtime()
     name = display_name(user)
     period = _period(when.hour)
 
-    seed_src = f"{getattr(user, 'pk', 'anon')}:{when.date().isoformat()}:{period}:{'w' if welcome else 'd'}"
+    kind = "n" if first_time else "w" if welcome else "d"
+    seed_src = f"{getattr(user, 'pk', 'anon')}:{when.date().isoformat()}:{period}:{kind}"
     seed = int(hashlib.md5(seed_src.encode()).hexdigest(), 16)
 
     if name:
@@ -67,6 +77,12 @@ def build_greeting(user, when: datetime | None = None, *, welcome: bool = False)
         }
         welcome_lines = [
             f"Welcome back, {name}",
+            f"You’re in, {name} — let’s go",
+            f"Hi {name} — good to have you",
+            f"Hey fighter — welcome, {name}",
+        ]
+        first_lines = [
+            f"Welcome, {name}",
             f"You’re in, {name} — let’s go",
             f"Hi {name} — good to have you",
             f"Hey fighter — welcome, {name}",
@@ -104,13 +120,25 @@ def build_greeting(user, when: datetime | None = None, *, welcome: bool = False)
             "Hi — good to have you",
             "Hey fighter — welcome",
         ]
+        first_lines = [
+            "Welcome",
+            "You’re in — let’s go",
+            "Hi — good to have you",
+            "Hey fighter — welcome",
+        ]
 
-    lines = welcome_lines if welcome else by_period[period]
+    if first_time:
+        lines = first_lines
+    elif welcome:
+        lines = welcome_lines
+    else:
+        lines = by_period[period]
     headline = lines[seed % len(lines)]
 
     return {
         "headline": headline,
         "name": name,
         "period": period,
-        "welcome": welcome,
+        "welcome": welcome or first_time,
+        "first_time": first_time,
     }

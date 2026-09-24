@@ -9,3 +9,4 @@ media/
 venv/
 .venv/
 myvenv/
+private_media/

@@ -25,64 +25,7 @@
     {% endif %}
 
     <div class="nav-right">
-      <div class="reader-wrap">
-        <button class="icon-btn" id="reader-btn" type="button" aria-expanded="false" aria-controls="reader-panel">
-          <svg class="icon-aa" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3.5 18.5 L8.2 6.5 L12.9 18.5"/>
-            <path d="M5.2 13.8h6"/>
-            <path d="M16.2 18.5v-6.1c0-1.5 1.2-2.5 2.7-2.5s2.7 1 2.7 2.5v6.1"/>
-            <path d="M21.6 12.4v6.1"/>
-          </svg>
-          <span class="label">Reading</span>
-        </button>
-
-        <div class="reader" id="reader-panel" role="dialog" aria-label="Reading options">
-          <div class="reader__head">
-            <h4>Reading</h4>
-            <p class="hint">Adjust size, colours, and Easy Read. Saved on this device.</p>
-          </div>
-
-          <div class="reader-group">
-            <span class="reader-label" id="lbl-size">Text size</span>
-            <div class="seg seg--size" role="group" aria-labelledby="lbl-size">
-              <button type="button" data-size="16" aria-pressed="true" aria-label="Small text">A</button>
-              <button type="button" data-size="18" aria-pressed="false" aria-label="Medium text">A</button>
-              <button type="button" data-size="20" aria-pressed="false" aria-label="Large text">A</button>
-              <button type="button" data-size="23" aria-pressed="false" aria-label="Extra large text">A</button>
-            </div>
-          </div>
-
-          <div class="reader-group">
-            <span class="reader-label" id="lbl-theme">Colours</span>
-            <div class="theme-grid" role="group" aria-labelledby="lbl-theme">
-              <button type="button" class="theme-chip" data-theme-set="light" aria-pressed="true">
-                <span class="theme-chip__swatch theme-chip__swatch--light" aria-hidden="true"></span>
-                <span class="theme-chip__name">Light</span>
-              </button>
-              <button type="button" class="theme-chip" data-theme-set="dark" aria-pressed="false">
-                <span class="theme-chip__swatch theme-chip__swatch--dark" aria-hidden="true"></span>
-                <span class="theme-chip__name">Dark</span>
-              </button>
-              <button type="button" class="theme-chip" data-theme-set="contrast" aria-pressed="false">
-                <span class="theme-chip__swatch theme-chip__swatch--contrast" aria-hidden="true"></span>
-                <span class="theme-chip__name">High contrast</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="reader-group">
-            <div class="switch-row">
-              <div>
-                <span class="t">Easy Read</span>
-                <p class="d">Shorter sentences, simpler words.</p>
-              </div>
-              <button type="button" class="switch" id="easy-read" aria-pressed="false" aria-label="Turn Easy Read on"></button>
-            </div>
-          </div>
-
-          <button type="button" class="reader-reset" id="reader-reset">Reset to default</button>
-        </div>
-      </div>
+      {% include "includes/reader_panel.html" %}
 
       {% if user.is_authenticated %}
       <a class="btn btn-primary nav-cta" href="{% url 'visits:record' %}">Record a visit <span class="arrow">&rarr;</span></a>

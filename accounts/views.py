@@ -13,7 +13,7 @@ from .google import exchange_code, google_authorize_url, google_configured
 
 User = get_user_model()
 
-DEFAULT_POST_AUTH_REDIRECT = "visits:record"
+DEFAULT_POST_AUTH_REDIRECT = "dashboard"
 
 
 def _auth_context(**extra):
@@ -48,7 +48,7 @@ def signup_view(request):
     if request.method == "POST" and form.is_valid():
         user = form.save()
         login(request, user)
-        request.session["aira_just_signed_in"] = True
+        request.session["aira_just_signed_up"] = True
         return redirect(_safe_next(request))
     return render(request, "accounts/signup.html", _auth_context(form=form))
 
@@ -92,6 +92,7 @@ def google_callback(request):
         return redirect("accounts:signup")
 
     user = User.objects.filter(email__iexact=email).first()
+    created = user is None
     if user is None:
         base = email.split("@")[0][:140] or "aira"
         username = base
@@ -109,7 +110,10 @@ def google_callback(request):
         user.save(update_fields=["password"])
 
     login(request, user)
-    request.session["aira_just_signed_in"] = True
+    if created:
+        request.session["aira_just_signed_up"] = True
+    else:
+        request.session["aira_just_signed_in"] = True
     nxt = request.session.pop("google_oauth_next", None) or reverse(DEFAULT_POST_AUTH_REDIRECT)
     if not (nxt.startswith("/") and not nxt.startswith("//")):
         nxt = reverse(DEFAULT_POST_AUTH_REDIRECT)

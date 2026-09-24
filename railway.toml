@@ -2,7 +2,11 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "gunicorn neuromed_v2.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
-releaseCommand = "python manage.py migrate --noinput && python manage.py collectstatic --noinput"
+# Migrations run once per deploy, after the build and before traffic switches over.
+# (Not at build time: the build has no database access, which is what broke 073add90.)
+preDeployCommand = ["python manage.py migrate --noinput"]
+# collectstatic runs at start: pre-deploy runs in its own container, so files it
+# writes would not reach the app. WhiteNoise serves them from STATIC_ROOT.
+startCommand = "python manage.py collectstatic --noinput && gunicorn neuromed_v2.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

@@ -64,3 +64,16 @@ Confirmed against the live site (`neuromedai.org` login/signup):
 - UI: `DM Sans`, system-ui, sans-serif
 - Display / headlines: `Instrument Serif`, Georgia, serif (italic for emphasis)
 - Auth navy: `#0F4C81` / `#08305A`; cream page ground `#FAFAF8`; body text `#0D1B2A`
+
+## Signed-in app shell
+
+Signed-in pages extend `templates/app_base.html`, not `base.html`. The marketing header and footer belong to the landing and legal pages only.
+
+- **Desktop (≥1040px):** fixed left sidebar with a primary "Record a visit" button, then Home, Your visits, Ask Aira, and Documents. At the bottom is a one-line care note ("works alongside your doctor / emergency number") that stands in for the footer disclaimer. A slim top bar holds the date, Reading options, and the account menu.
+- **Phone/tablet:** top bar (logo, Reading, avatar) plus a bottom tab bar. The raised centre tab is Record.
+- **Home (`/home/`, `neuromed_v2.views.dashboard`)** is where sign-in lands. It shows one "Your next step" card, chosen from the patient's state (first visit → unfinished recording → review a recent summary → record the next appointment), then a getting-started checklist, quick actions, recent visits and documents, and a care card.
+- Styles live in `static/css/app.css` and reuse the shell.css tokens, so Light, Dark, and High contrast all work. Sizes are in rem so the text-size control scales the whole shell.
+- Inner pages use `.page-head` (left-aligned serif title, actions on the right) rather than the old centred header with the greeting repeated on every page.
+- **Ask Aira** is a full-height conversation. Each chat is its own `ChatSession`, titled from its first question, at `/chat/<id>/`. `/chat/` starts a new one, which is saved only when the first message is sent. Past chats are listed beside it, grouped Today / Yesterday / Previous 7 days / Earlier. Below 1100px that list becomes a drawer opened from the chat header. Deleting a chat removes its messages, but any safety `EscalationEvent` keeps its audit row.
+- **Aira's conversational voice:** Aira cares about the person, not only the question. It acknowledges feelings in one genuine sentence and always ends with one gentle, specific question ("What are you feeling right now?"). It never signs off with lines like "I'm here to help" or "let me know if you have any questions"; the patient decides when the conversation is over. This is set in `chat/guidance.py` (`GUIDE_PROMPT`). `ensure_open_ending()` is a safety net: it removes a trailing sign-off and adds a gentle check-in if a reply doesn't already end with a question.
+- **Scans and imaging:** Aira never reads findings from an X-ray, MRI, CT or ultrasound image. General-purpose AI isn't reliable at that, and a tool that reads scans would count as a regulated medical device. It doesn't refuse either: it names what the image appears to be ("an MRI of your knee"), says what that scan is for, points the patient to the radiologist's written report (usually in MyChart under Imaging), and explains that report line by line when they share it. This is set in `chat/guidance.py` (`GUIDE_PROMPT`; `SHARED_IMAGE_NOTE` is added when a photo is shared).

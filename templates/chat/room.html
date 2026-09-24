@@ -1,70 +1,218 @@
-{% extends "base.html" %}
+{% extends "app_base.html" %}
 {% load static %}
 
 {% block title %}Ask Aira{% endblock %}
+{% block main_class %} app-main--chat{% endblock %}
 
 {% block content %}
-<section class="app-page app-page--chat">
-  <header class="app-page__head">
-    {% include "includes/greeting.html" %}
-    <h1>Ask Aira</h1>
-    <p>About a visit, a note, or something you didn’t want to forget.</p>
-  </header>
-
-  <div class="tone-bar">
-    <label class="tone-bar__label" for="tone" id="tone-label">Tone</label>
-    <select id="tone" name="tone" aria-labelledby="tone-label">
-      <option value="auto" selected>Auto</option>
-      <option value="PlainClinical">Balanced</option>
-      <option value="Caregiver">Caregiver</option>
-      <option value="Faith">Faith</option>
-      <option value="Clinical">Clinical</option>
-      <option value="Geriatric">Geriatric</option>
-      <option value="EmotionalSupport">Emotional support</option>
-    </select>
-    <button type="button" class="a11y-btn" id="chat-easy-read" aria-pressed="false">Easy Read</button>
-  </div>
-
-  <div class="chat-shell">
-    <div
-      class="thread"
-      id="thread"
-      role="log"
-      aria-live="polite"
-      aria-relevant="additions"
-      data-aira-icon="{% static 'img/icons/aira-heart.png' %}"
-    >
-      {% for message in chat_messages %}
-        <div class="msg msg--{{ message.role }}">
-          {% if message.role == "assistant" %}
-            <span class="msg__avatar msg__avatar--aira" aria-hidden="true">
-              <img src="{% static 'img/icons/aira-heart.png' %}" alt="" width="32" height="32">
-            </span>
-            <article class="bubble bubble--assistant">{{ message.content }}</article>
-          {% else %}
-            <article class="bubble bubble--user">{{ message.content }}</article>
-            <span class="msg__avatar msg__avatar--user" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="8.2" r="3.4" fill="currentColor"/>
-                <path d="M5.2 19.2c1.1-3.2 3.6-4.8 6.8-4.8s5.7 1.6 6.8 4.8"
-                      stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                      fill="none"/>
-              </svg>
-            </span>
-          {% endif %}
+<div class="chat-wrap">
+  <aside class="convos" id="convos" aria-label="Your conversations">
+    <div class="convos__head">
+      <h2>Conversations</h2>
+      <button type="button" class="convos__close" id="convos-close" aria-label="Close conversations">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <a class="convos__new" href="{% url 'chat:room' %}"{% if not conversation %} aria-current="page"{% endif %}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      New chat
+    </a>
+    <nav class="convos__list" id="convos-list">
+      {% for label, items in history_groups %}
+        <div class="convos__group" data-group="{{ label }}">
+          <h3>{{ label }}</h3>
+          <ul>
+            {% for c in items %}
+              <li class="convo{% if conversation and c.pk == conversation.pk %} is-active{% endif %}">
+                <a href="{% url 'chat:conversation' c.pk %}"{% if conversation and c.pk == conversation.pk %} aria-current="page"{% endif %}>{{ c.display_title }}</a>
+                <form method="post" action="{% url 'chat:delete_conversation' c.pk %}" onsubmit="return confirm('Delete this conversation? This can’t be undone.');">
+                  {% csrf_token %}
+                  <button type="submit" class="convo__del" aria-label="Delete “{{ c.display_title }}”" title="Delete">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>
+                  </button>
+                </form>
+              </li>
+            {% endfor %}
+          </ul>
         </div>
       {% empty %}
-        <p class="thread-empty">Start with whatever is on your mind. Aira will send you back to your doctor when that’s the right next step.</p>
+        <p class="convos__empty" id="convos-empty">Your past conversations will be listed here, so you can pick one up again.</p>
+      {% endfor %}
+    </nav>
+  </aside>
+  <div class="convos-scrim" id="convos-scrim" hidden></div>
+
+<section class="chat" aria-labelledby="chat-title">
+  <header class="chat__bar">
+    <div class="chat__who">
+      <button type="button" class="convos-toggle" id="convos-open" aria-controls="convos" aria-expanded="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 4v4.5H8M12 7.5V12l3 2"/></svg>
+        <span class="sr-only">Show conversations</span>
+      </button>
+      <span class="chat__mark" aria-hidden="true"><img src="{% static 'img/icons/aira-heart.png' %}" alt="" width="28" height="28"></span>
+      <div>
+        <h1 id="chat-title">{% if conversation %}{{ conversation.display_title }}{% else %}Ask Aira{% endif %}</h1>
+        <p>{% if conversation %}Started {{ conversation.created_at|date:"j F" }} · Ask Aira{% else %}Plain-language answers. Your doctor for the big decisions.{% endif %}</p>
+      </div>
+    </div>
+    <div class="chat__controls">
+      <label class="sr-only" for="tone" id="tone-label">Tone</label>
+      <select id="tone" name="tone" aria-labelledby="tone-label">
+        <option value="auto" selected>Tone: Auto</option>
+        <option value="PlainClinical">Tone: Balanced</option>
+        <option value="Caregiver">Tone: Caregiver</option>
+        <option value="Faith">Tone: Faith</option>
+        <option value="Clinical">Tone: Clinical</option>
+        <option value="Geriatric">Tone: Geriatric</option>
+        <option value="EmotionalSupport">Tone: Emotional support</option>
+      </select>
+      <button type="button" class="chip-toggle" id="chat-easy-read" aria-pressed="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+        Easy Read
+      </button>
+    </div>
+  </header>
+
+  <div class="chat__scroll" id="thread" data-conversation-id="{{ conversation.pk|default:'' }}"
+       data-conversation-url="{% url 'chat:conversation' 0 %}" role="log" aria-live="polite" aria-relevant="additions"
+       data-aira-icon="{% static 'img/icons/aira-heart.png' %}">
+    <div class="chat__col" id="thread-col">
+      {% for message in chat_messages %}
+        {% if message.role == "assistant" %}
+          <div class="msg msg--assistant">
+            <span class="msg__avatar msg__avatar--aira" aria-hidden="true"><img src="{% static 'img/icons/aira-heart.png' %}" alt="" width="28" height="28"></span>
+            <div class="msg__body">
+              <article class="bubble bubble--assistant"><span class="sr-only">Aira: </span>{{ message.content }}</article>
+              {% if forloop.last and message.follow_ups %}
+                <div class="follow-ups" aria-label="Suggested next questions">
+                  <span class="follow-ups__label">You could ask</span>
+                  {% for q in message.follow_ups %}<button type="button" data-ask="{{ q }}">{{ q }}</button>{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% else %}
+          <div class="msg msg--user">
+            <div class="msg__body msg__body--user">
+              {% with atts=message.attachments.all %}
+                {% if atts %}
+                  <div class="att-grid">
+                    {% for d in atts|dictsort:"pk" %}
+                      {% if d.is_image and d.has_file %}
+                        <a class="att att--img" href="{% url 'documents:file' d.pk %}" target="_blank" rel="noopener">
+                          <img src="{% url 'documents:file' d.pk %}" alt="Photo you shared: {{ d.original_name }}" loading="lazy">
+                        </a>
+                      {% else %}
+                        <a class="att att--file" href="{% url 'documents:detail' d.pk %}">
+                          <span class="att__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10z"/><path d="M14 3.5v5h5"/></svg></span>
+                          <span class="att__meta"><strong>{{ d.original_name|default:d.get_kind_display }}</strong><span>{{ d.size_bytes|filesizeformat }}</span></span>
+                        </a>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              {% endwith %}
+              {% if message.content %}<article class="bubble bubble--user"><span class="sr-only">You: </span>{{ message.content }}</article>{% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% empty %}
+        <div class="thread-empty">
+          <span class="thread-empty__mark" aria-hidden="true"><img src="{% static 'img/icons/aira-heart.png' %}" alt="" width="44" height="44"></span>
+          <h2>What would you like to understand?</h2>
+          <p>Ask about a visit, a word on a lab result, or a medicine. When something needs your doctor, Aira will say so.</p>
+          <div class="chat-starters" aria-label="Suggested questions">
+            {% for st in starters %}
+              <button type="button" data-ask="{{ st.ask }}"><strong>{{ st.title }}</strong><span>{{ st.sub }}</span></button>
+            {% endfor %}
+          </div>
+        </div>
       {% endfor %}
     </div>
+  </div>
 
-    <form class="composer" id="chat-form">
+  <div class="chat__dock">
+    <form class="composer" id="chat-form" enctype="multipart/form-data">
       {% csrf_token %}
-      <label class="sr-only" for="chat-message">Message</label>
-      <textarea id="chat-message" name="message" rows="1" required placeholder="Ask about the visit…"></textarea>
-      <button type="submit" class="btn btn--primary composer__send">Send</button>
+      <div class="att-tray" id="att-tray" hidden aria-live="polite"></div>
+      <p class="att-error" id="att-error" role="alert" hidden></p>
+      <div class="composer__row">
+        <div class="composer__tools">
+          <button type="button" class="tool-btn" id="attach-btn" aria-label="Attach a photo or document" title="Attach a photo or document">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m20.5 11.5-8.3 8.3a5.2 5.2 0 0 1-7.4-7.4l8.3-8.3a3.5 3.5 0 0 1 4.9 4.9L9.7 17.3a1.7 1.7 0 0 1-2.5-2.5l7.6-7.6"/></svg>
+          </button>
+          <button type="button" class="tool-btn" id="camera-btn" aria-label="Take a photo" title="Take a photo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.6-2.2h5.8L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.3"/></svg>
+          </button>
+          <input type="file" id="file-input" multiple hidden
+                 accept="image/*,.heic,application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain">
+          <input type="file" id="capture-input" accept="image/*" capture="environment" hidden>
+        </div>
+        <label class="sr-only" for="chat-message">Message Aira</label>
+        <textarea id="chat-message" name="message" rows="1" placeholder="Ask Aira anything about your care…">{{ prefill }}</textarea>
+        <button type="submit" class="composer__send" aria-label="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>
+        </button>
+      </div>
     </form>
+    <p class="chat__fine">Share photos, PDFs or Word files (up to 3, 15 MB each). They’re saved privately to your Documents. Aira isn’t your doctor — in an emergency, call your local emergency number.</p>
+  </div>
+
+  <div class="drop-veil" id="drop-veil" hidden><div><strong>Drop to share with Aira</strong><span>Photos, PDFs or Word files</span></div></div>
+
+  <div class="cam" id="cam" role="dialog" aria-modal="true" aria-labelledby="cam-title" hidden>
+    <div class="cam__panel">
+      <div class="cam__head">
+        <h2 id="cam-title">Take a photo</h2>
+        <button type="button" class="convos__close cam__close" id="cam-close" aria-label="Close camera">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <p class="cam__tip">Lay the page flat in good light and fill the frame.</p>
+      <div class="cam__stage">
+        <video id="cam-video" playsinline muted></video>
+        <canvas id="cam-canvas" hidden></canvas>
+        <img id="cam-still" alt="Photo preview" hidden>
+      </div>
+      <div class="cam__actions">
+        <button type="button" class="btn-app btn-app--primary" id="cam-snap">Take photo</button>
+        <button type="button" class="btn-app btn-app--primary" id="cam-use" hidden>Use this photo</button>
+        <button type="button" class="btn-app btn-app--ghost" id="cam-retake" hidden>Retake</button>
+      </div>
+    </div>
   </div>
 </section>
-<script src="{% static 'js/chat.js' %}"></script>
+</div>
+<script src="{% static 'js/chat.js' %}?v=20260925g"></script>
+<script>
+  (function () {
+    var form = document.getElementById("chat-form");
+    var input = document.getElementById("chat-message");
+    document.getElementById("thread").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-ask]");
+      if (!b || form.dataset.busy === "1") return;
+      input.value = b.getAttribute("data-ask");
+      input.dispatchEvent(new Event("input"));
+      if (form.requestSubmit) form.requestSubmit(); else input.focus();
+    });
+
+    /* Conversation drawer on smaller screens. */
+    var panel = document.getElementById("convos");
+    var scrim = document.getElementById("convos-scrim");
+    var openBtn = document.getElementById("convos-open");
+    var closeBtn = document.getElementById("convos-close");
+    function setOpen(open) {
+      panel.classList.toggle("is-open", open);
+      scrim.hidden = !open;
+      openBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) closeBtn.focus(); else openBtn.focus();
+    }
+    openBtn.addEventListener("click", function () { setOpen(true); });
+    closeBtn.addEventListener("click", function () { setOpen(false); });
+    scrim.addEventListener("click", function () { setOpen(false); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && panel.classList.contains("is-open")) setOpen(false);
+    });
+  })();
+</script>
 {% endblock %}

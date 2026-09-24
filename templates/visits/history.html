@@ -1,41 +1,48 @@
-{% extends "base.html" %}
+{% extends "app_base.html" %}
+{% load visit_extras %}
 {% block title %}Your visits{% endblock %}
 {% block content %}
 <section class="app-page">
-  <header class="app-page__head">
-    {% include "includes/greeting.html" %}
-    <h1>Your visits</h1>
-    <p>Summaries stay here so you don’t have to replay the appointment from memory.</p>
-    <a class="btn btn--primary" href="{% url 'visits:record' %}">Record a visit</a>
+  <header class="page-head">
+    <div>
+      <h1>Your visits</h1>
+      <p>Every summary stays here, so you never have to replay an appointment from memory.</p>
+    </div>
+    <div class="page-head__actions">
+      <a class="btn-app btn-app--primary" href="{% url 'visits:record' %}">Record a visit</a>
+    </div>
   </header>
-  <ul class="visit-list">
-    {% for visit in visits %}
-      <li class="visit-row">
-        <a class="visit-row__link" href="{% url 'visits:detail' visit.id %}">
-          <strong>{{ visit.started_at|date:"M j, Y" }}</strong>
-          <span>{{ visit.get_status_display }}</span>
-        </a>
-        <form method="post" action="{% url 'visits:discard' visit.id %}" class="visit-row__delete">
-          {% csrf_token %}
-          <button
-            type="submit"
-            class="visit-row__delete-btn"
-            aria-label="Delete visit from {{ visit.started_at|date:'M j, Y' }}"
-            title="Delete"
-            onclick="return confirm('Delete this visit? This can’t be undone.');"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 7h16"/>
-              <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-              <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/>
-              <path d="M10 11v6M14 11v6"/>
-            </svg>
-          </button>
-        </form>
-      </li>
-    {% empty %}
-      <li class="thread-empty">No visits yet. The first recording is free — that’s the point.</li>
-    {% endfor %}
-  </ul>
+
+  {% if visits %}
+    <div class="panel list-card">
+      <ul class="rows">
+        {% for visit in visits %}
+          <li class="row-wrap">
+            <a class="row" href="{% url 'visits:detail' visit.id %}">
+              <span class="row__date"><b>{{ visit.started_at|date:"j" }}</b>{{ visit.started_at|date:"M" }}</span>
+              <span class="row__body">
+                <strong>Visit on {{ visit.started_at|date:"l, j F Y" }}</strong>
+                <span>{% if visit.summary %}{{ visit.summary|summary_preview|truncatewords:16 }}{% else %}No summary yet{% endif %}</span>
+              </span>
+              <span class="badge {% if visit.status == 'summarized' %}badge--ok{% else %}badge--wait{% endif %}">{% if visit.status == 'summarized' %}Summary ready{% else %}Not finished{% endif %}</span>
+            </a>
+            <form method="post" action="{% url 'visits:discard' visit.id %}">
+              {% csrf_token %}
+              <button type="submit" class="icon-del" aria-label="Delete visit from {{ visit.started_at|date:'j F Y' }}" title="Delete"
+                onclick="return confirm('Delete this visit? This can’t be undone.');">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M10 11v6M14 11v6"/></svg>
+              </button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <div class="empty empty--big">
+      <h2>No visits yet</h2>
+      <p>Record your next appointment and you’ll get a plain-language summary here. Recording and summaries are always free.</p>
+      <a class="btn-app btn-app--primary" href="{% url 'visits:record' %}">Record your first visit</a>
+    </div>
+  {% endif %}
 </section>
 {% endblock %}

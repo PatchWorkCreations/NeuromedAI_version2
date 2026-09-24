@@ -282,7 +282,7 @@ html[data-contrast="high"] .btn--ghost {
 }
 
 .app-page__head .user-greeting--welcome {
-  color: var(--nm-accent);
+  color: var(--teal, #0e9e9e);
 }
 
 .app-page__head p {
@@ -993,7 +993,7 @@ html[data-theme="dark"] .app-page__head .user-greeting {
 }
 
 html[data-theme="dark"] .app-page__head .user-greeting--welcome {
-  color: #7eb6e8;
+  color: var(--teal, #44c9c1);
 }
 
 html[data-theme="dark"] .app-page__head p,

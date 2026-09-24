@@ -4,73 +4,19 @@ Document upload + list.
 Stores extracted text on UploadedDocument. Binary media storage is still
 open (ARCHITECTURE.md) — this path must succeed without it.
 """
-import io
 import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from . import storage
+from .ingest import UploadRejected, extension, ingest
 from .models import UploadedDocument
 
 logger = logging.getLogger(__name__)
-
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
-MAX_UPLOAD_BYTES = 15 * 1024 * 1024  # 15 MB
-
-
-def _extension(name: str) -> str:
-    name = (name or "").lower().strip()
-    if "." not in name:
-        return ""
-    return "." + name.rsplit(".", 1)[-1]
-
-
-def _extract_text(uploaded) -> str:
-    name = (uploaded.name or "").lower()
-    data = uploaded.read()
-    try:
-        uploaded.seek(0)
-    except Exception:
-        pass
-
-    try:
-        if name.endswith(".pdf"):
-            import fitz
-
-            doc = fitz.open(stream=data, filetype="pdf")
-            try:
-                return "\n".join(page.get_text() for page in doc).strip()
-            finally:
-                doc.close()
-
-        if name.endswith(".docx"):
-            import docx
-
-            document = docx.Document(io.BytesIO(data))
-            return "\n".join(p.text for p in document.paragraphs).strip()
-
-        if name.endswith((".png", ".jpg", ".jpeg")):
-            try:
-                import pytesseract
-                from PIL import Image
-
-                text = pytesseract.image_to_string(Image.open(io.BytesIO(data)))
-                return (text or "").strip()
-            except Exception as exc:
-                logger.info("Image OCR unavailable or failed: %s", exc)
-                return ""
-
-        if name.endswith(".txt"):
-            return data.decode("utf-8", errors="ignore").strip()
-
-        # Unknown text-like fallback
-        return data.decode("utf-8", errors="ignore").strip()
-    except Exception:
-        logger.exception("Document text extraction failed for %s", name)
-        return ""
-
 
 @login_required
 def document_list(request):
@@ -80,31 +26,18 @@ def document_list(request):
             messages.error(request, "Choose a file to upload.")
             return redirect("documents:list")
 
-        ext = _extension(uploaded.name)
-        if ext not in ALLOWED_EXTENSIONS:
-            messages.error(
-                request,
-                "That file type isn’t supported. Use PDF, Word (.docx), text, PNG, or JPG.",
+        ext = extension(uploaded.name)
+        try:
+            doc = ingest(
+                request.user,
+                uploaded,
+                kind=request.POST.get("kind") or UploadedDocument.Kind.OTHER,
+                source=request.POST.get("source_institution") or "",
             )
+        except UploadRejected as exc:
+            messages.error(request, str(exc))
             return redirect("documents:list")
-
-        if uploaded.size and uploaded.size > MAX_UPLOAD_BYTES:
-            messages.error(request, "That file is too large. Please keep uploads under 15 MB.")
-            return redirect("documents:list")
-
-        kind = request.POST.get("kind") or UploadedDocument.Kind.OTHER
-        if kind not in UploadedDocument.Kind.values:
-            kind = UploadedDocument.Kind.OTHER
-
-        source = (request.POST.get("source_institution") or "").strip()[:255]
-        extracted = _extract_text(uploaded)
-
-        UploadedDocument.objects.create(
-            user=request.user,
-            kind=kind,
-            source_institution=source,
-            extracted_text=extracted,
-        )
+        extracted = doc.extracted_text
 
         if extracted:
             messages.success(request, "Document uploaded. Here’s what we could read from it.")
@@ -138,6 +71,27 @@ def document_detail(request, document_id):
 @require_POST
 def document_delete(request, document_id):
     document = get_object_or_404(UploadedDocument, pk=document_id, user=request.user)
+    storage.remove(document.file_key)
     document.delete()
     messages.success(request, "Document removed from your timeline.")
     return redirect("documents:list")
+
+
+@login_required
+def document_file(request, document_id):
+    """The original file, decrypted for its owner only. Never cached, never public."""
+    document = get_object_or_404(UploadedDocument, pk=document_id, user=request.user)
+    if not document.file_key:
+        raise Http404("No stored file")
+    try:
+        data = storage.load(document.file_key)
+    except storage.StorageError:
+        logger.exception("Could not load stored file for document %s", document.pk)
+        raise Http404("File unavailable")
+    response = HttpResponse(data, content_type=document.content_type or "application/octet-stream")
+    disposition = "inline" if request.GET.get("download") != "1" else "attachment"
+    safe_name = (document.original_name or "document").replace('"', "")
+    response["Content-Disposition"] = f'{disposition}; filename="{safe_name}"'
+    response["Cache-Control"] = "private, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response

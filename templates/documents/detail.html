@@ -1,26 +1,38 @@
-{% extends "base.html" %}
-{% block title %}{{ document.get_kind_display }}{% endblock %}
+{% extends "app_base.html" %}
+{% block title %}{{ document.title }}{% endblock %}
 {% block content %}
 <section class="app-page">
-  <header class="app-page__head">
-    <h1>{{ document.get_kind_display }}</h1>
-    <p>
-      {{ document.source_institution|default:"Source not noted" }}
-      · {{ document.uploaded_at|date:"M j, Y" }}
-    </p>
+  <header class="page-head">
+    <div>
+      <a class="page-head__crumb" href="{% url 'documents:list' %}"><span aria-hidden="true">←</span> Documents</a>
+      <h1>{{ document.title }}</h1>
+      <p>{{ document.source_institution|default:"Source not noted" }} · Added {{ document.uploaded_at|date:"j F Y" }}</p>
+    </div>
+    <div class="page-head__actions">
+      {% if document.has_file %}<a class="btn-app btn-app--ghost" href="{% url 'documents:file' document.id %}" target="_blank" rel="noopener">Open the original</a>{% endif %}
+      <a class="btn-app btn-app--ghost" href="{% url 'chat:room' %}?ask={% filter urlencode %}Can you explain my {{ document.get_kind_display|lower }} from {{ document.uploaded_at|date:'j F' }} in plain words?{% endfilter %}">Ask Aira about this</a>
+    </div>
   </header>
+
+  {% if document.has_file and document.is_image %}
+    <a class="doc-photo" href="{% url 'documents:file' document.id %}" target="_blank" rel="noopener">
+      <img src="{% url 'documents:file' document.id %}" alt="{{ document.original_name|default:'Your photo' }}">
+    </a>
+  {% endif %}
 
   {% if document.extracted_text %}
     <article class="summary-card">{{ document.extracted_text|linebreaks }}</article>
   {% else %}
-    <p class="thread-empty">No readable text was extracted from this file.</p>
+    <div class="empty empty--big">
+      <h2>No text pulled out</h2>
+      <p>{% if document.is_image %}Photos aren’t turned into text here yet, but Aira can read them when you share them in Ask Aira.{% else %}We couldn’t pull text out of this file.{% endif %}</p>
+    </div>
   {% endif %}
 
-  <div class="doc-actions">
-    <a class="btn btn--ghost" href="{% url 'documents:list' %}">Back to documents</a>
+  <div class="page-foot">
     <form method="post" action="{% url 'documents:delete' document.id %}" onsubmit="return confirm('Remove this document from your timeline?');">
       {% csrf_token %}
-      <button type="submit" class="btn btn--ghost">Delete</button>
+      <button type="submit" class="btn-app btn-app--danger">Delete this document</button>
     </form>
   </div>
 </section>

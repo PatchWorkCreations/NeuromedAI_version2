@@ -37,6 +37,15 @@ if _railway_domain:
     _default_csrf.append(f"https://{_railway_domain}")
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=_default_csrf)
 
+# Production domain(s): always allowed, even when ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS
+# are overridden by environment variables on Railway.
+PRODUCTION_HOSTS = ["neuromedaiversion2-production.up.railway.app"]
+for _host in PRODUCTION_HOSTS:
+    if _host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_host)
+    if f"https://{_host}" not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(f"https://{_host}")
+
 # Railway (and similar) terminate TLS at the proxy.
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -130,7 +139,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "visits:record"
+LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "home"
 
 GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
@@ -167,6 +176,24 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # A signed BAA must be active on this key's org before any pilot patient's
 # data reaches it.
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
+
+# --- Patient files (documents/storage.py) ----------------------------------
+# Every stored file is encrypted with DOCUMENT_ENCRYPTION_KEY before it leaves
+# the app, so the storage provider only ever holds unreadable bytes. This matters
+# for Iceberg: its delivery URLs are public with no private or signed option.
+#   DOCUMENT_STORAGE=local    encrypted files under PRIVATE_MEDIA_ROOT (dev; Railway disk is ephemeral)
+#   DOCUMENT_STORAGE=iceberg  encrypted files on cdn.katalyst-crm.com via its API
+# Generate a key once:  python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# Losing this key makes every stored file unreadable, so keep it in a password manager too.
+DOCUMENT_STORAGE = env("DOCUMENT_STORAGE", default="local")
+DOCUMENT_ENCRYPTION_KEY = env("DOCUMENT_ENCRYPTION_KEY", default="")
+PRIVATE_MEDIA_ROOT = Path(env("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "private_media")))
+ICEBERG_API_BASE = env("ICEBERG_API_BASE", default="https://dashboard.katalyst-crm.com")
+ICEBERG_DELIVERY_BASE = env("ICEBERG_DELIVERY_BASE", default="https://cdn.katalyst-crm.com")
+ICEBERG_TOKEN = env("ICEBERG_TOKEN", default="")
+ICEBERG_KEY_PREFIX = env("ICEBERG_KEY_PREFIX", default="neuromed-aira/documents")
+# Without a key in production, originals are simply not kept (text is still read);
+# in DEBUG a throwaway key is derived from SECRET_KEY so local dev works out of the box.
 
 # --- Feature flags ----------------------------------------------------------
 # Follow the v1 pattern documented in ARCHITECTURE.md: new behavior ships

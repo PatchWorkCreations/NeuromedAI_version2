@@ -1,0 +1,202 @@
+{% extends "app_base.html" %}
+{% load visit_extras %}
+{% block title %}Home{% endblock %}
+{% block main_class %} app-main--wide{% endblock %}
+{% block content %}
+<div class="dash">
+  <header class="dash-head">
+    <p class="dash-head__date">{{ today|date:"l, j F" }}</p>
+    <h1 class="dash-head__hello{% if aira_greeting.welcome %} is-welcome{% endif %}">
+      {% if aira_greeting %}{{ aira_greeting.headline }}{% else %}Welcome{% endif %}
+    </h1>
+    <p class="dash-head__sub">
+      {% if visit_count %}
+        Here’s where things stand, and what’s worth doing next.
+      {% else %}
+        Aira helps you understand, remember, and act on what happens at the doctor. Here’s how to start.
+      {% endif %}
+    </p>
+  </header>
+
+  <div class="dash-grid">
+    <div class="dash-main">
+
+      {# ——— The one next step ——— #}
+      <section class="next" aria-labelledby="next-title">
+        <p class="next__eyebrow"><span class="dot" aria-hidden="true"></span> Your next step</p>
+
+        {% if next_step.kind == "first_visit" %}
+          <h2 id="next-title" class="next__title">Record your first visit</h2>
+          <p class="next__lede">Bring Aira into your next appointment. Afterwards you get a plain-language summary of what was said — medicines, instructions, and what happens next.</p>
+          <ol class="next__steps">
+            <li><span class="n">1</span><div><strong>Everyone agrees</strong><span>We ask for consent before the microphone opens.</span></div></li>
+            <li><span class="n">2</span><div><strong>Aira listens</strong><span>Speak naturally. Stop whenever you like.</span></div></li>
+            <li><span class="n">3</span><div><strong>You get a summary</strong><span>In plain words, saved here for next time.</span></div></li>
+          </ol>
+          <div class="next__actions">
+            <a class="btn-app btn-app--primary" href="{% url 'visits:record' %}">Start a recording <span aria-hidden="true">→</span></a>
+            <a class="btn-app btn-app--quiet" href="{% url 'documents:list' %}">Or add a document you already have</a>
+          </div>
+
+        {% elif next_step.kind == "unfinished" %}
+          <h2 id="next-title" class="next__title">Finish your visit from {{ next_step.visit.started_at|date:"j F" }}</h2>
+          <p class="next__lede">This recording was started but never summarized. Open it to see what was captured, or record the visit again.</p>
+          <div class="next__actions">
+            <a class="btn-app btn-app--primary" href="{% url 'visits:detail' next_step.visit.id %}">Open this visit <span aria-hidden="true">→</span></a>
+            <a class="btn-app btn-app--ghost" href="{% url 'visits:record' %}">Record again</a>
+          </div>
+
+        {% elif next_step.kind == "review" %}
+          <h2 id="next-title" class="next__title">Go over your visit from {{ next_step.visit.started_at|date:"j F" }}</h2>
+          <p class="next__lede">A second read helps it stick. Check the medicines and follow-up, then ask Aira about anything that isn’t clear.</p>
+          <blockquote class="next__quote">{{ next_step.visit.summary|summary_preview|truncatewords:36 }}</blockquote>
+          <div class="next__actions">
+            <a class="btn-app btn-app--primary" href="{% url 'visits:detail' next_step.visit.id %}">Read the summary <span aria-hidden="true">→</span></a>
+            <a class="btn-app btn-app--ghost" href="{% url 'chat:room' %}?ask={% filter urlencode %}Can you explain my visit from {{ next_step.visit.started_at|date:'j F' }} in plain words?{% endfilter %}">Ask about this visit</a>
+          </div>
+
+        {% else %}
+          <h2 id="next-title" class="next__title">Heading to an appointment?</h2>
+          <p class="next__lede">Record it, and you’ll have your summary ready before you’re home. Your last visit was on {{ next_step.visit.started_at|date:"j F" }}.</p>
+          <div class="next__actions">
+            <a class="btn-app btn-app--primary" href="{% url 'visits:record' %}">Record a visit <span aria-hidden="true">→</span></a>
+            <a class="btn-app btn-app--ghost" href="{% url 'visits:detail' next_step.visit.id %}">Review the last one</a>
+          </div>
+        {% endif %}
+      </section>
+
+      {# ——— Quick actions ——— #}
+      <section class="quick" aria-label="Things you can do">
+        <a class="quick__card" href="{% url 'visits:record' %}">
+          <span class="quick__icon quick__icon--navy"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></span>
+          <strong>Record a visit</strong>
+          <span>Always free. Consent comes first.</span>
+        </a>
+        <a class="quick__card" href="{% url 'chat:room' %}">
+          <span class="quick__icon quick__icon--teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 4z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/></svg></span>
+          <strong>Ask Aira</strong>
+          <span>A word, a medicine, a worry.</span>
+        </a>
+        <a class="quick__card" href="{% url 'documents:list' %}">
+          <span class="quick__icon quick__icon--sand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4.5 14.5v3a2.5 2.5 0 0 0 2.5 2.5h10a2.5 2.5 0 0 0 2.5-2.5v-3"/></svg></span>
+          <strong>Add a document</strong>
+          <span>Lab results, discharge papers.</span>
+        </a>
+      </section>
+
+      {# ——— Recent ——— #}
+      <section class="panel" aria-labelledby="recent-visits">
+        <div class="panel__head">
+          <h2 id="recent-visits">Recent visits</h2>
+          {% if visit_count %}<a href="{% url 'visits:list' %}">View all {{ visit_count }}</a>{% endif %}
+        </div>
+        {% if recent_visits %}
+          <ul class="rows">
+            {% for v in recent_visits %}
+              <li>
+                <a class="row" href="{% url 'visits:detail' v.id %}">
+                  <span class="row__date"><b>{{ v.started_at|date:"j" }}</b>{{ v.started_at|date:"M" }}</span>
+                  <span class="row__body">
+                    <strong>Visit on {{ v.started_at|date:"l, j F" }}</strong>
+                    <span>{% if v.summary %}{{ v.summary|summary_preview|truncatewords:14 }}{% else %}No summary yet{% endif %}</span>
+                  </span>
+                  <span class="badge {% if v.status == 'summarized' %}badge--ok{% else %}badge--wait{% endif %}">{% if v.status == 'summarized' %}Summary ready{% else %}Not finished{% endif %}</span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty">
+            <p>Your visit summaries will appear here.</p>
+            <a href="{% url 'visits:record' %}">Record your first visit →</a>
+          </div>
+        {% endif %}
+      </section>
+
+      <section class="panel" aria-labelledby="recent-docs">
+        <div class="panel__head">
+          <h2 id="recent-docs">Documents</h2>
+          {% if doc_count %}<a href="{% url 'documents:list' %}">View all {{ doc_count }}</a>{% endif %}
+        </div>
+        {% if recent_docs %}
+          <ul class="rows">
+            {% for d in recent_docs %}
+              <li>
+                <a class="row" href="{% url 'documents:detail' d.id %}">
+                  <span class="row__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10z"/><path d="M14 3.5v5h5"/></svg></span>
+                  <span class="row__body">
+                    <strong>{{ d.title }}</strong>
+                    <span>{{ d.source_institution|default:"Source not noted" }} · {{ d.uploaded_at|date:"j M Y" }}</span>
+                  </span>
+                  <span class="row__chev" aria-hidden="true">›</span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty">
+            <p>Keep lab results and hospital papers in one place, from any hospital.</p>
+            <a href="{% url 'documents:list' %}">Add a document →</a>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+
+    <aside class="dash-side">
+      {% if not onboarding_complete %}
+        <section class="card setup" aria-labelledby="setup-title">
+          <div class="setup__head">
+            <h2 id="setup-title">Getting started</h2>
+            <span class="setup__count">{{ checklist_done }} of {{ checklist_total }}</span>
+          </div>
+          <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="{{ checklist_total }}" aria-valuenow="{{ checklist_done }}" aria-label="Getting started progress">
+            <span style="width: {{ checklist_pct }}%"></span>
+          </div>
+          <ul class="setup__list">
+            {% for item in checklist %}
+              <li class="{% if item.done %}is-done{% endif %}">
+                {% if item.done or not item.url %}
+                  <span class="tick" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
+                  <span class="setup__label"><s>{{ item.label }}</s><span class="sr-only"> — done</span></span>
+                {% else %}
+                  <a href="{% url item.url %}">
+                    <span class="tick" aria-hidden="true"></span>
+                    <span class="setup__label">{{ item.label }}<small>{{ item.hint }}</small></span>
+                    <span class="row__chev" aria-hidden="true">›</span>
+                  </a>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% else %}
+        <section class="card glance" aria-labelledby="glance-title">
+          <h2 id="glance-title">At a glance</h2>
+          <dl class="glance__stats">
+            <div><dt>Visits</dt><dd>{{ visit_count }}</dd></div>
+            <div><dt>Documents</dt><dd>{{ doc_count }}</dd></div>
+            <div><dt>Questions asked</dt><dd>{{ question_count }}</dd></div>
+          </dl>
+        </section>
+      {% endif %}
+
+      <section class="card tips" aria-labelledby="tips-title">
+        <h2 id="tips-title">Before your next appointment</h2>
+        <ul>
+          <li>Write down the two questions that matter most to you.</li>
+          <li>Bring your medicine list, or a photo of the bottles.</li>
+          <li>Ask your doctor if it’s all right to record the conversation.</li>
+        </ul>
+      </section>
+
+      <section class="card care" aria-labelledby="care-title">
+        <span class="care__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-7.5-4.4-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.8-7.5 10.2-7.5 10.2z"/></svg></span>
+        <div>
+          <h2 id="care-title">Aira knows when to hand over</h2>
+          <p>For changes to your medicines or a symptom that worries you, Aira will point you back to your doctor. In an emergency, call your local emergency number.</p>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+{% endblock %}

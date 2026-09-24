@@ -132,3 +132,22 @@ v1's red-flag handling lived entirely inside prompt phrasing ("mention red flags
 - Procfile + gunicorn + whitenoise, same shape as v1.
 - `DATABASE_URL`, `OPENAI_API_KEY`, cloud storage credentials, and translation vendor credentials all sourced from environment variables — never hardcoded, never logged.
 - Every third-party service that can touch patient data (OpenAI, the cloud host, the translation vendor) needs its BAA status confirmed *before* it's wired into a code path a pilot patient can reach.
+
+## Chat memory of the patient's records
+
+`chat/context.py` builds a short briefing from the signed-in patient's own records and appends it to the chat system prompt on every reply. It covers the 3 most recent non-discarded visit summaries (up to 1,800 characters each) and the 3 most recent uploaded documents (up to 1,200 characters each). Without it, "explain my last visit" had nothing to work from. The briefing only adds context: replies still pass through `safety.engine.check_escalation()`. It never includes other users' records and is empty for guests.
+
+## Helping patients ask the right questions
+
+`chat/guidance.py` covers the patients who don't know what to ask:
+- **`GUIDE_PROMPT`** is appended to every chat system prompt. It tells Aira to narrow a vague question with at most two short questions offering simple choices, to tie suggestions to the patient's records (medicine, value, visit date), to point out gaps such as an instruction with no timeframe, and to write "questions for my doctor" in the first person so they can be read aloud.
+- **Suggested next questions:** the model ends each reply with a `NEXT: q || q || q` line. `split_follow_ups()` removes that line from the reply and saves the questions on `ChatMessage.follow_ups`, and the UI shows them as tappable chips under Aira's latest reply. There are none after a safety redirect, because the next step there is the doctor.
+- **`build_starters()`** builds the four opening cards in an empty chat from the patient's latest visit and document. "I'm not sure what to ask" is always one of them.
+
+## Patient files: chat attachments and Documents
+
+Patients can share up to 3 files per message in Ask Aira (photos, PDF, Word, text; 15 MB each). They can use the paperclip, the camera button, drag and drop, or paste. On phones the camera button opens the native camera; on desktop it opens a webcam view. Every upload, from the chat or the Documents page, goes through `documents/ingest.py`: check the extension and the actual bytes, extract text, then store the original encrypted. Each file becomes an `UploadedDocument`, linked to its `ChatMessage` if it was shared in a chat, so it also appears on the Documents timeline.
+
+- **What the model sees:** photos go to GPT-4o as images, downsized to 1,600px JPEG. PDF, Word and text files go as extracted text (up to 8,000 characters). Later turns in the same chat carry a short text note about earlier files. OpenAI is still the only vendor (boundary #5), and the safety check covers the message plus the shared text.
+- **Storage (`documents/storage.py`):** files are encrypted with Fernet using `DOCUMENT_ENCRYPTION_KEY` before they leave the app. Storage keys are random (`<prefix>/<uuid>.bin`) and never include names. `DOCUMENT_STORAGE=iceberg` stores them on cdn.katalyst-crm.com using its three-step upload (init-upload → PUT to presigned R2 → complete). **Iceberg delivery URLs are public with no private or signed option**, which is why encryption is mandatory rather than optional. Patients open files only through `documents:file`, which checks ownership, decrypts, and sends `Cache-Control: private, no-store`. Deleting a document trashes the Iceberg asset (purged after 30 days) or removes the local file.
+- **Open compliance item:** Iceberg's underlying storage is Cloudflare R2. It only ever holds ciphertext, but confirm with counsel that encrypted storage without a BAA is acceptable for the pilot before real patient data goes there (CLAUDE.md, "three questions" #3).

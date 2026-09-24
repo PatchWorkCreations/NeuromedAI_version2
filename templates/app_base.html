@@ -1,0 +1,145 @@
+{% load static %}<!DOCTYPE html>
+{# Signed-in app shell: sidebar on desktop, top bar + bottom tabs on phones. No marketing footer. #}
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Aira{% endblock %} · Aira</title>
+  <meta name="theme-color" content="#0b2545">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Aira">
+  <link rel="manifest" href="{% url 'web_manifest' %}">
+  <link rel="icon" type="image/png" href="{% static 'img/aira-wordmark.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/icons/apple-touch-icon.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/aira.css' %}?v=20260925">
+  <link rel="stylesheet" href="{% static 'css/shell.css' %}?v=20260925">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260925f">
+  {% block extra_css %}{% endblock %}
+</head>
+{% with url_name=request.resolver_match.url_name ns=request.resolver_match.namespace %}
+<body class="authed-app app-shell">
+  <a class="skip" href="#main">Skip to content</a>
+
+  <aside class="app-side" aria-label="Aira">
+    <a class="app-side__brand" href="{% url 'dashboard' %}" aria-label="Aira home">
+      <img src="{% static 'img/aira-wordmark.png' %}" alt="" height="34">
+    </a>
+
+    <a class="app-side__cta" href="{% url 'visits:record' %}"{% if ns == 'visits' and url_name == 'record' %} aria-current="page"{% endif %}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+      Record a visit
+    </a>
+
+    <nav class="app-nav" aria-label="Primary">
+      <a href="{% url 'dashboard' %}"{% if url_name == 'dashboard' %} aria-current="page"{% endif %}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/></svg>
+        Home
+      </a>
+      <a href="{% url 'visits:list' %}"{% if ns == 'visits' and url_name != 'record' %} aria-current="page"{% endif %}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>
+        Your visits
+      </a>
+      <a href="{% url 'chat:room' %}"{% if ns == 'chat' %} aria-current="page"{% endif %}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 4z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/></svg>
+        Ask Aira
+      </a>
+      <a href="{% url 'documents:list' %}"{% if ns == 'documents' %} aria-current="page"{% endif %}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10z"/><path d="M14 3.5v5h5M9 13h6M9 16.5h4"/></svg>
+        Documents
+      </a>
+    </nav>
+
+    <div class="app-side__foot">
+      <div class="app-side__care">
+        <strong>Aira works alongside your doctor.</strong>
+        In an emergency, call your local emergency number.
+      </div>
+      <p class="app-side__legal">
+        <a href="{% url 'legal_privacy' %}">Privacy</a>
+        <span aria-hidden="true">·</span>
+        <a href="{% url 'legal_terms' %}">Terms</a>
+      </p>
+    </div>
+  </aside>
+
+  <div class="app-body">
+    <header class="app-topbar">
+      <a class="app-topbar__brand" href="{% url 'dashboard' %}" aria-label="Aira home">
+        <img src="{% static 'img/aira-wordmark.png' %}" alt="" height="34">
+      </a>
+      <p class="app-topbar__date">{% now "l, j F" %}</p>
+
+      <div class="app-topbar__right">
+        {% include "includes/reader_panel.html" %}
+
+        <div class="acct">
+          <button class="acct__btn" id="acct-btn" type="button" aria-expanded="false" aria-controls="acct-menu" aria-label="Account menu">
+            <span class="acct__avatar" aria-hidden="true">{{ user.first_name|default:user.username|first|upper }}</span>
+            <span class="acct__name">{{ user.first_name|default:user.username }}</span>
+            <svg width="20" height="20" class="acct__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="acct__menu" id="acct-menu" hidden>
+            <div class="acct__who">
+              <strong>{{ user.get_full_name|default:user.username }}</strong>
+              {% if user.email %}<span>{{ user.email }}</span>{% endif %}
+            </div>
+            <a href="{% url 'dashboard' %}">Home</a>
+            <a href="{% url 'legal_privacy' %}">Privacy</a>
+            <a href="{% url 'legal_terms' %}">Terms</a>
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button type="submit">Log out</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="app-main{% block main_class %}{% endblock %}">
+      {% if messages %}
+        <ul class="flash-list app-flash">
+          {% for message in messages %}
+            <li class="flash flash--{{ message.tags }}" role="status">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <nav class="app-tabs" aria-label="Primary">
+    <a href="{% url 'dashboard' %}"{% if url_name == 'dashboard' %} aria-current="page"{% endif %}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="{% url 'visits:list' %}"{% if ns == 'visits' and url_name != 'record' %} aria-current="page"{% endif %}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>
+      <span>Visits</span>
+    </a>
+    <a class="app-tabs__record" href="{% url 'visits:record' %}"{% if ns == 'visits' and url_name == 'record' %} aria-current="page"{% endif %}>
+      <span class="app-tabs__mic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></span>
+      <span>Record</span>
+    </a>
+    <a href="{% url 'chat:room' %}"{% if ns == 'chat' %} aria-current="page"{% endif %}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 4z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/></svg>
+      <span>Ask</span>
+    </a>
+    <a href="{% url 'documents:list' %}"{% if ns == 'documents' %} aria-current="page"{% endif %}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10z"/><path d="M14 3.5v5h5M9 13h6M9 16.5h4"/></svg>
+      <span>Documents</span>
+    </a>
+  </nav>
+
+  <script src="{% static 'js/select.js' %}?v=20260925"></script>
+  <script src="{% static 'js/shell.js' %}?v=20260925"></script>
+  <script src="{% static 'js/app.js' %}?v=20260925"></script>
+  <script src="{% static 'js/pwa.js' %}?v=20260925"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+{% endwith %}
+</html>

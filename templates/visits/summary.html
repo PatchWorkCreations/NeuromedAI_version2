@@ -1,25 +1,52 @@
-{% extends "base.html" %}
+{% extends "app_base.html" %}
+{% load static visit_extras %}
 {% block title %}Visit summary{% endblock %}
 {% block content %}
 <section class="app-page">
-  <header class="app-page__head">
-    <h1>Visit summary</h1>
-    <p>{{ visit.started_at|date:"M j, Y" }} · {{ visit.get_status_display }}</p>
+  <header class="page-head">
+    <div>
+      <a class="page-head__crumb" href="{% url 'visits:list' %}"><span aria-hidden="true">←</span> Your visits</a>
+      <h1>Visit on {{ visit.started_at|date:"l, j F" }}</h1>
+      <p>
+        <span class="badge {% if visit.status == 'summarized' %}badge--ok{% else %}badge--wait{% endif %}">{% if visit.status == 'summarized' %}Summary ready{% else %}Not finished{% endif %}</span>
+      </p>
+    </div>
   </header>
+
   {% if visit.summary %}
-    <article class="summary-card">{{ visit.summary|linebreaks }}</article>
+    <article class="summary-card">{{ visit.summary|summary_format }}</article>
   {% else %}
-    <p class="thread-empty">This visit doesn’t have a summary yet.</p>
+    <div class="empty empty--big">
+      <h2>No summary yet</h2>
+      <p>This recording stopped before a summary was made. You can record the visit again.</p>
+      <a class="btn-app btn-app--primary" href="{% url 'visits:record' %}">Record again</a>
+    </div>
   {% endif %}
+
   {% if visit.transcript %}
     <details class="transcript-details">
-      <summary>Transcript</summary>
-      <p>{{ visit.transcript|linebreaks }}</p>
+      <summary>Show the full transcript</summary>
+      {{ visit.transcript|linebreaks }}
     </details>
   {% endif %}
-  <form method="post" action="{% url 'visits:discard' visit.id %}">
-    {% csrf_token %}
-    <button type="submit" class="btn btn--ghost">Discard this visit</button>
-  </form>
+
+  <h2 class="sr-only">What to do next</h2>
+  <div class="after">
+    <a href="{% url 'chat:room' %}?ask={% filter urlencode %}Can you explain my visit from {{ visit.started_at|date:'j F' }} in plain words?{% endfilter %}">
+      <span class="quick__icon quick__icon--teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 4z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/></svg></span>
+      <span><strong>Something unclear?</strong><span>Ask Aira to explain it in plainer words.</span></span>
+    </a>
+    <a href="{% url 'documents:list' %}">
+      <span class="quick__icon quick__icon--sand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4.5 14.5v3a2.5 2.5 0 0 0 2.5 2.5h10a2.5 2.5 0 0 0 2.5-2.5v-3"/></svg></span>
+      <span><strong>Got papers from this visit?</strong><span>Add lab results or a discharge summary.</span></span>
+    </a>
+  </div>
+
+  <div class="page-foot">
+    <form method="post" action="{% url 'visits:discard' visit.id %}" onsubmit="return confirm('Delete this visit? This can’t be undone.');">
+      {% csrf_token %}
+      <button type="submit" class="btn-app btn-app--danger">Delete this visit</button>
+    </form>
+  </div>
 </section>
 {% endblock %}

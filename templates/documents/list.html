@@ -1,25 +1,19 @@
-{% extends "base.html" %}
+{% extends "app_base.html" %}
 {% block title %}Documents{% endblock %}
 {% block content %}
 <section class="app-page">
-  <header class="app-page__head">
-    {% include "includes/greeting.html" %}
-    <h1>Documents</h1>
-    <p>Lab results, discharge papers, notes from another hospital — one timeline.</p>
+  <header class="page-head">
+    <div>
+      <h1>Documents</h1>
+      <p>Lab results, discharge papers, notes from another hospital — kept together in one timeline.</p>
+    </div>
   </header>
-
-  {% if messages %}
-    <ul class="flash-list">
-      {% for message in messages %}
-        <li class="flash flash--{{ message.tags }}">{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
 
   <form class="upload-form" method="post" enctype="multipart/form-data" id="document-upload-form">
     {% csrf_token %}
+    <h2>Add a document</h2>
     <label>
-      Kind
+      <span>What is it?</span>
       <select name="kind" id="document-kind" aria-label="Document kind" required>
         {% for value, label in kinds %}
           <option value="{{ value }}"{% if forloop.first %} selected{% endif %}>{{ label }}</option>
@@ -27,51 +21,48 @@
       </select>
     </label>
     <label>
-      Hospital or clinic <span class="opt">(optional)</span>
+      <span>Hospital or clinic <span class="opt">(optional)</span></span>
       <input type="text" name="source_institution" placeholder="e.g. County General" maxlength="255">
     </label>
-    <label>
-      File
-      <input type="file" name="file" id="document-file" required accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,application/pdf,text/plain,image/png,image/jpeg">
-      <span class="field-hint">PDF, Word (.docx), text, PNG, or JPG — up to 15 MB.</span>
+    <label class="upload-form__file">
+      <span>File</span>
+      <input type="file" name="file" id="document-file" required accept="image/*,.heic,.pdf,.docx,.txt,application/pdf,text/plain">
+      <span class="field-hint">Photo, PDF, Word (.docx) or text file, up to 15 MB. Saved privately and encrypted.</span>
     </label>
-    <button type="submit" class="btn btn--primary" id="document-upload-btn">Upload</button>
+    <div class="upload-form__foot">
+      <button type="submit" class="btn-app btn-app--primary" id="document-upload-btn">Upload</button>
+    </div>
   </form>
 
-  <ul class="visit-list">
-    {% for doc in documents %}
-      <li class="visit-row">
-        <a class="visit-row__link" href="{% url 'documents:detail' doc.id %}">
-          <strong>{{ doc.get_kind_display }}</strong>
-          <span>{{ doc.source_institution|default:"—" }} · {{ doc.uploaded_at|date:"M j, Y" }}</span>
-          {% if doc.extracted_text %}
-            <p class="visit-row__preview">{{ doc.extracted_text|truncatewords:28 }}</p>
-          {% else %}
-            <p class="visit-row__preview">No readable text extracted</p>
-          {% endif %}
-        </a>
-        <form method="post" action="{% url 'documents:delete' doc.id %}" class="visit-row__delete">
-          {% csrf_token %}
-          <button
-            type="submit"
-            class="visit-row__delete-btn"
-            aria-label="Delete {{ doc.get_kind_display }}"
-            title="Delete"
-            onclick="return confirm('Remove this document from your timeline?');"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 7h16"/>
-              <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-              <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/>
-              <path d="M10 11v6M14 11v6"/>
-            </svg>
-          </button>
-        </form>
-      </li>
-    {% empty %}
-      <li class="thread-empty">Nothing uploaded yet.</li>
-    {% endfor %}
-  </ul>
+  {% if documents %}
+    <div class="panel list-card">
+      <div class="panel__head"><h2>Your documents</h2></div>
+      <ul class="rows">
+        {% for doc in documents %}
+          <li class="row-wrap">
+            <a class="row" href="{% url 'documents:detail' doc.id %}">
+              <span class="row__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10z"/><path d="M14 3.5v5h5"/></svg></span>
+              <span class="row__body">
+                <strong>{{ doc.title }}</strong>
+                <span>{{ doc.source_institution|default:"Source not noted" }} · {{ doc.uploaded_at|date:"j M Y" }}{% if not doc.extracted_text %} · No readable text{% endif %}</span>
+              </span>
+            </a>
+            <form method="post" action="{% url 'documents:delete' doc.id %}">
+              {% csrf_token %}
+              <button type="submit" class="icon-del" aria-label="Delete {{ doc.title }}" title="Delete"
+                onclick="return confirm('Remove this document from your timeline?');">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M10 11v6M14 11v6"/></svg>
+              </button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <div class="empty">
+      <p>Nothing uploaded yet. Your first document will appear here.</p>
+    </div>
+  {% endif %}
 </section>
 {% endblock %}
 

@@ -27,5 +27,32 @@ class UploadedDocument(models.Model):
     extracted_text = models.TextField(blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    # The original file, encrypted at rest (see documents/storage.py). Empty for
+    # documents uploaded before file storage existed; those only kept their text.
+    file_key = models.CharField(max_length=255, blank=True)
+    original_name = models.CharField(max_length=255, blank=True)
+    content_type = models.CharField(max_length=100, blank=True)
+    size_bytes = models.PositiveIntegerField(default=0)
+    chat_message = models.ForeignKey(
+        "chat.ChatMessage", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="attachments",
+        help_text="Set when the file was shared in an Ask Aira conversation.",
+    )
+
     class Meta:
         ordering = ["-uploaded_at"]
+
+    @property
+    def title(self) -> str:
+        """A kind like "Lab result", or the file name for things shared without a kind."""
+        if self.kind == self.Kind.OTHER and self.original_name:
+            return self.original_name
+        return self.get_kind_display()
+
+    @property
+    def has_file(self) -> bool:
+        return bool(self.file_key)
+
+    @property
+    def is_image(self) -> bool:
+        return self.content_type.startswith("image/")
