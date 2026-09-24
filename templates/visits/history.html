@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Your visits{% endblock %}
+{% block content %}
+<section class="app-page">
+  <header class="app-page__head">
+    <h1>Your visits</h1>
+    <p>Summaries stay here so you don’t have to replay the appointment from memory.</p>
+    <a class="btn btn--primary" href="{% url 'visits:record' %}">Record a visit</a>
+  </header>
+  <ul class="visit-list">
+    {% for visit in visits %}
+      <li>
+        <a href="{% url 'visits:detail' visit.id %}">
+          <strong>{{ visit.started_at|date:"M j, Y" }}</strong>
+          <span>{{ visit.get_status_display }}</span>
+        </a>
+      </li>
+    {% empty %}
+      <li class="thread-empty">No visits yet. The first recording is free — that’s the point.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

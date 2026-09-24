@@ -1,0 +1,116 @@
+{% extends "accounts/auth_base.html" %}
+
+{% block title %}Create Account – NeuroMed Aira{% endblock %}
+
+{% block sidebar %}
+  <h2 class="sidebar-headline">Every patient<br><em>deserves clarity.</em></h2>
+  <p class="sidebar-desc">Join patients and families who use Aira to understand a visit — without the jargon or the overwhelm.</p>
+  <div class="value-list">
+    <div class="value-item">
+      <div class="value-dot sky"></div>
+      <div class="value-text">
+        <p>Plain-language summaries</p>
+        <p>Walk out knowing what was said, in words you can use.</p>
+      </div>
+    </div>
+    <div class="value-item">
+      <div class="value-dot teal"></div>
+      <div class="value-text">
+        <p>Gentle follow-up chat</p>
+        <p>Ask questions in your own words, as many times as you need.</p>
+      </div>
+    </div>
+    <div class="value-item">
+      <div class="value-dot amber"></div>
+      <div class="value-text">
+        <p>Record, with consent first</p>
+        <p>The microphone never opens until everyone in the room agrees.</p>
+      </div>
+    </div>
+    <div class="value-item">
+      <div class="value-dot rose"></div>
+      <div class="value-text">
+        <p>Faith &amp; family tones</p>
+        <p>Responses that honor how you actually talk at home.</p>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block form %}
+  <header class="form-header">
+    <h1>Create your account</h1>
+    <p>Free to start. No credit card required. Takes under a minute.</p>
+  </header>
+
+  {% if form.non_field_errors %}
+    <div class="alert-error" role="alert">{{ form.non_field_errors|striptags }}</div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <p class="section-label">Personal info</p>
+    <div class="fields-grid">
+      <div class="input-group">
+        <label for="{{ form.first_name.id_for_label }}">First name</label>
+        <div class="input-row">{{ form.first_name }}</div>
+        {% if form.first_name.errors %}<p class="field-error">{{ form.first_name.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="input-group">
+        <label for="{{ form.last_name.id_for_label }}">Last name</label>
+        <div class="input-row">{{ form.last_name }}</div>
+        {% if form.last_name.errors %}<p class="field-error">{{ form.last_name.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="input-group full">
+        <label for="{{ form.email.id_for_label }}">Email address</label>
+        <div class="input-row">{{ form.email }}</div>
+        {% if form.email.errors %}<p class="field-error">{{ form.email.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="input-group full">
+        <label for="{{ form.profession.id_for_label }}">Profession <span class="opt">(optional)</span></label>
+        <div class="input-row">{{ form.profession }}</div>
+      </div>
+    </div>
+
+    <p class="section-label">Account details</p>
+    <div class="fields-grid">
+      <div class="input-group full">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        <div class="input-row">{{ form.username }}</div>
+        {% if form.username.errors %}<p class="field-error">{{ form.username.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="input-group">
+        <label for="{{ form.password1.id_for_label }}">Password</label>
+        <div class="input-row">
+          {{ form.password1 }}
+          <button type="button" class="toggle-pw" data-toggle-password="{{ form.password1.id_for_label }}" aria-label="Show password">Show</button>
+        </div>
+        <p class="hint">{{ form.password1.help_text }}</p>
+        {% if form.password1.errors %}<p class="field-error">{{ form.password1.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="input-group">
+        <label for="{{ form.password2.id_for_label }}">Confirm password</label>
+        <div class="input-row">
+          {{ form.password2 }}
+          <button type="button" class="toggle-pw" data-toggle-password="{{ form.password2.id_for_label }}" aria-label="Show password">Show</button>
+        </div>
+        {% if form.password2.errors %}<p class="field-error">{{ form.password2.errors|striptags }}</p>{% endif %}
+      </div>
+    </div>
+
+    <label class="terms-row">
+      {{ form.terms }}
+      <span>I agree to the <a href="{% url 'legal_terms' %}">Terms of Use</a> and <a href="{% url 'legal_privacy' %}">Privacy Policy</a>. My visit notes stay mine — I’m always in control.</span>
+    </label>
+    {% if form.terms.errors %}<p class="field-error">{{ form.terms.errors|striptags }}</p>{% endif %}
+
+    <button type="submit" class="btn-submit">Create my free account</button>
+  </form>
+
+  <p class="or-divider">or sign up with</p>
+  <a class="btn-google" href="{% url 'accounts:google_start' %}">
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3.1 0 5.8 1.1 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.5-5.2l-6.2-5.2C29.2 35.1 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.2-3.5 5.6-6.5 7.1l6.2 5.2C37.5 37.8 44 32 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+    Continue with Google
+  </a>
+  <p class="login-row">Already have an account? <a href="{% url 'accounts:login' %}">Log in</a></p>
+{% endblock %}

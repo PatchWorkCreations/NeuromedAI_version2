@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ask Aira{% endblock %}
+
+{% block content %}
+<section class="app-page">
+  <header class="app-page__head">
+    <h1>Ask Aira</h1>
+    <p>About a visit, a note, or something you didn’t want to forget.</p>
+  </header>
+
+  <div class="tone-bar">
+    <label for="tone">Tone</label>
+    <select id="tone" name="tone">
+      <option value="auto">Auto</option>
+      <option value="PlainClinical">Balanced</option>
+      <option value="Caregiver">Caregiver</option>
+      <option value="Faith">Faith</option>
+      <option value="Clinical">Clinical</option>
+      <option value="Geriatric">Geriatric</option>
+      <option value="EmotionalSupport">Emotional support</option>
+    </select>
+    <button type="button" class="a11y-btn" id="chat-easy-read" aria-pressed="false">Easy Read</button>
+  </div>
+
+  <div class="thread" id="thread">
+    {% for message in chat_messages %}
+      <article class="bubble bubble--{{ message.role }}">{{ message.content }}</article>
+    {% empty %}
+      <p class="thread-empty">Start with whatever is on your mind. Aira will send you back to your doctor when that’s the right next step.</p>
+    {% endfor %}
+  </div>
+
+  <form class="composer" id="chat-form">
+    {% csrf_token %}
+    <label class="sr-only" for="chat-message">Message</label>
+    <textarea id="chat-message" name="message" rows="2" required placeholder="Ask about the visit…"></textarea>
+    <button type="submit" class="btn btn--primary">Send</button>
+  </form>
+</section>
+<script src="{% static 'js/chat.js' %}"></script>
+{% endblock %}

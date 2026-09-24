@@ -1,0 +1,58 @@
+{% extends "accounts/auth_base.html" %}
+
+{% block title %}Login – NeuroMed Aira{% endblock %}
+
+{% block sidebar %}
+  <h2 class="sidebar-headline">Medical clarity,<br><em>finally within reach.</em></h2>
+  <p class="sidebar-desc">Aira helps you understand, remember, and act on what happened at the doctor — so you can focus on healing, not decoding.</p>
+  <div class="sample-card">
+    <p class="sample-card-label"><span></span> Live summary · Caregiver Mode</p>
+    <p>Your father’s visit notes are in one place. White blood cell count was slightly elevated — often seen after a mild infection, not an immediate concern.</p>
+    <div class="card-inner">
+      <p><strong>Next step:</strong> Mention it at his follow-up next Tuesday, and keep the questions you wanted to ask.</p>
+    </div>
+  </div>
+{% endblock %}
+
+{% block form %}
+  <header class="form-header">
+    <h1>Welcome back</h1>
+    <p>Log in to access your summaries and continue with Aira.</p>
+  </header>
+
+  {% if form.non_field_errors %}
+    <div class="alert-error" role="alert">{{ form.non_field_errors|striptags }}</div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="fields-grid">
+      <div class="input-group full">
+        <label for="{{ form.username.id_for_label }}">Email address</label>
+        <div class="input-row">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>
+          {{ form.username }}
+        </div>
+        {% if form.username.errors %}<p class="field-error">{{ form.username.errors|striptags }}</p>{% endif %}
+      </div>
+      <div class="input-group full">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        <div class="input-row">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          {{ form.password }}
+          <button type="button" class="toggle-pw" data-toggle-password="{{ form.password.id_for_label }}" aria-label="Show password">Show</button>
+        </div>
+        {% if form.password.errors %}<p class="field-error">{{ form.password.errors|striptags }}</p>{% endif %}
+      </div>
+    </div>
+    <a class="forgot-link" href="{% url 'accounts:password_reset' %}">Forgot password?</a>
+    <button type="submit" class="btn-submit">Log in to Aira</button>
+  </form>
+
+  <p class="or-divider">or continue with</p>
+  <a class="btn-google" href="{% url 'accounts:google_start' %}">
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3.1 0 5.8 1.1 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.5-5.2l-6.2-5.2C29.2 35.1 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.2-3.5 5.6-6.5 7.1l6.2 5.2C37.5 37.8 44 32 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+    Continue with Google
+  </a>
+  <p class="login-row">Don’t have an account? <a href="{% url 'accounts:signup' %}">Create one free</a></p>
+{% endblock %}

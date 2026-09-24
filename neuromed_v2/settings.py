@@ -1,0 +1,155 @@
+"""
+Django settings for neuromed_v2.
+
+See ARCHITECTURE.md for the reasoning behind each piece of this file —
+in particular the "Open decisions" section (cloud host, translation vendor,
+PWA vs. native) before adding config for those.
+"""
+import os
+from pathlib import Path
+import environ
+import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+env = environ.Env(DEBUG=(bool, False))
+environ.Env.read_env(BASE_DIR / ".env")
+
+SECRET_KEY = env("SECRET_KEY", default="dev-only-not-secure")
+DEBUG = env.bool("DEBUG", default=False)
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=[
+        "http://127.0.0.1:8001",
+        "http://localhost:8001",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ],
+)
+
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+
+    "rest_framework",
+    "channels",
+
+    # Project apps — see ARCHITECTURE.md § App structure.
+    # Deliberately absent: anything resembling v1's Organizational Portal
+    # (triage / frontdesk / clinical / diagnostics / scribe / coding) and
+    # the kiosk feature. See CLAUDE.md boundary #1 before adding one back.
+    "accounts.apps.AccountsConfig",
+    "chat",
+    "visits",
+    "safety",
+    "care_circle",
+    "documents",
+    "billing",
+    "compliance",
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+ROOT_URLCONF = "neuromed_v2.urls"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = "neuromed_v2.wsgi.application"
+ASGI_APPLICATION = "neuromed_v2.asgi.application"
+
+# --- Database -----------------------------------------------------------
+# PostgreSQL only, in every environment — see CLAUDE.md boundary #6.
+# No SQLite fallback: local dev must match production so consent and
+# escalation behavior is never tested against a database that can't
+# actually hold what production holds.
+_database_url = env("DATABASE_URL", default="")
+if not _database_url:
+    raise ImproperlyConfigured(
+        "DATABASE_URL is empty. Set it in .env, e.g. "
+        "postgres://localhost:5432/neuromed_v2"
+    )
+DATABASES = {
+    "default": dj_database_url.parse(_database_url, conn_max_age=600)
+}
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "accounts.validators.MixedPasswordValidator"},
+]
+
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "home"
+LOGOUT_REDIRECT_URL = "home"
+
+GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
+GOOGLE_OAUTH_CLIENT_SECRET = env("GOOGLE_OAUTH_CLIENT_SECRET", default="")
+
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend",
+)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Aira <no-reply@neuromedai.org>")
+
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
+USE_I18N = True
+USE_TZ = True
+
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_STORAGE = (
+    "django.contrib.staticfiles.storage.StaticFilesStorage"
+    if DEBUG
+    else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# --- OpenAI ---------------------------------------------------------------
+# Sole LLM vendor for this build — see CLAUDE.md boundary #5.
+# A signed BAA must be active on this key's org before any pilot patient's
+# data reaches it.
+OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
+
+# --- Feature flags ----------------------------------------------------------
+# Follow the v1 pattern documented in ARCHITECTURE.md: new behavior ships
+# behind a flag, defaulting to the safe/off state, with graceful fallback.
+ENABLE_CARE_CIRCLE = env.bool("ENABLE_CARE_CIRCLE", default=False)
+
+# --- Not yet wired — see ARCHITECTURE.md § Open decisions ------------------
+# Translation vendor, cloud media storage, and Apple StoreKit (native-iOS
+# only) all depend on decisions not yet made. Don't default-guess a vendor
+# here; leave unset until it's a deliberate choice.

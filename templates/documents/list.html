@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Documents{% endblock %}
+{% block content %}
+<section class="app-page">
+  <header class="app-page__head">
+    <h1>Documents</h1>
+    <p>Lab results, discharge papers, notes from another hospital — one timeline.</p>
+  </header>
+  <form class="upload-form" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label>
+      Kind
+      <select name="kind">
+        {% for value, label in kinds %}
+          <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Hospital or clinic <span class="opt">(optional)</span>
+      <input type="text" name="source_institution" placeholder="e.g. County General">
+    </label>
+    <label>
+      File
+      <input type="file" name="file" required accept=".pdf,.docx,.txt,.png,.jpg">
+    </label>
+    <button type="submit" class="btn btn--primary">Upload</button>
+  </form>
+  <ul class="visit-list">
+    {% for doc in documents %}
+      <li>
+        <strong>{{ doc.get_kind_display }}</strong>
+        <span>{{ doc.source_institution|default:"—" }} · {{ doc.uploaded_at|date:"M j, Y" }}</span>
+        {% if doc.extracted_text %}
+          <p>{{ doc.extracted_text|truncatewords:40 }}</p>
+        {% endif %}
+      </li>
+    {% empty %}
+      <li class="thread-empty">Nothing uploaded yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% load static %}
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <img class="brand-logo" src="{% static 'img/aira-wordmark.png' %}" alt="Aira">
+        <p>Aira sits alongside your doctor and your patient portal. It does not replace either one.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Product</h4>
+        <a href="{% url 'visits:record' %}">Record a visit</a>
+        <a href="{% url 'visits:list' %}">Your visits</a>
+        <a href="{% url 'chat:room' %}">Ask Aira</a>
+        <a href="{% url 'documents:list' %}">Documents</a>
+      </div>
+      <div class="foot-col">
+        <h4>Company</h4>
+        <a href="{% url 'legal_privacy' %}">Privacy</a>
+        <a href="{% url 'legal_terms' %}">Terms</a>
+        <a href="{% url 'home' %}#safety">Safety &amp; governance</a>
+      </div>
+    </div>
+
+    <p class="foot-note">
+      Aira is not a medical device and does not provide medical advice, diagnosis or
+      treatment. If you think you may have a medical emergency, contact your local
+      emergency services immediately.
+    </p>
+
+    <div class="foot-bottom">
+      <p>&copy; 2026 AiraMed. All rights reserved.</p>
+      <p>Made for the people in the room.</p>
+    </div>
+  </div>
+</footer>

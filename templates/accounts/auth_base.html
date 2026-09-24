@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Aira{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{% static 'img/aira-wordmark.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body class="auth-body">
+  <aside class="sidebar" aria-hidden="false">
+    <a class="sidebar-logo" href="{% url 'home' %}" aria-label="Aira home">
+      <img src="{% static 'img/aira-wordmark.png' %}" alt="Aira">
+      <span class="sidebar-tag">Until Every Patient Understands.<span class="tm">&trade;</span></span>
+    </a>
+    <div class="sidebar-body">
+      {% block sidebar %}
+        <h2 class="sidebar-headline">Your visit,<br><em>in your own words.</em></h2>
+        <p class="sidebar-desc">Aira sits alongside your doctor and MyChart. It does not replace either one.</p>
+      {% endblock %}
+    </div>
+    <div class="trust-row">
+      <span class="trust-pill">Private</span>
+      <span class="trust-pill">Yours only</span>
+      <span class="trust-pill">Alongside your doctor</span>
+    </div>
+  </aside>
+  <div class="main-area">
+    <div class="form-shell">
+      <a class="form-logo" href="{% url 'home' %}" aria-label="Aira home">
+        <img src="{% static 'img/aira-wordmark.png' %}" alt="Aira">
+      </a>
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-info" role="status">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+      {% block form %}{% endblock %}
+    </div>
+  </div>
+  <script src="{% static 'js/auth.js' %}"></script>
+</body>
+</html>

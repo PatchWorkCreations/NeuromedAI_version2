@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Record a visit{% endblock %}
+
+{% block content %}
+<section class="app-page">
+  <header class="app-page__head">
+    <h1>Record a visit</h1>
+    <p>Consent first. Then the microphone. You can stop at any time.</p>
+  </header>
+
+  <div id="consent-step" class="consent-card">
+    <h2>Before the microphone opens</h2>
+    <p>{{ consent_text }}</p>
+    <button type="button" class="btn btn--primary" id="consent-yes">Everyone agrees — start recording</button>
+    <a class="btn btn--ghost" href="{% url 'visits:list' %}">Not now</a>
+  </div>
+
+  <div id="record-step" class="record-panel" hidden>
+    <p class="record-status" id="record-status">Ready</p>
+    <p class="transcript" id="transcript"></p>
+    <div class="hero__actions">
+      <button type="button" class="btn btn--primary" id="stop-btn" disabled>Stop &amp; summarize</button>
+      <button type="button" class="btn btn--ghost" id="discard-btn" disabled>Discard</button>
+    </div>
+  </div>
+</section>
+<script>
+  window.AIRA_VISIT = {
+    startUrl: "{% url 'visits:start' %}",
+    transcribeUrl: "{% url 'visits:voice_transcribe' %}",
+    csrf: "{{ csrf_token }}"
+  };
+</script>
+<script src="{% static 'js/visit.js' %}"></script>
+{% endblock %}

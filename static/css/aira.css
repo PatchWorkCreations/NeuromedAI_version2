@@ -1,0 +1,364 @@
+:root {
+  --nm-primary: #236092;
+  --nm-primary-dark: #1b5a8e;
+  --nm-accent: #28926d;
+  --nm-accent-light: #10b981;
+  --nm-text-primary: #0f172a;
+  --nm-text-secondary: #475569;
+  --nm-text-muted: #64748b;
+  --nm-paper: #ffffff;
+  --nm-bg-start: #f8fafc;
+  --nm-bg-end: #f1f5f9;
+  --nm-line: #e2e8f0;
+  --nm-focus: #28926d;
+  --nm-radius: 16px;
+  --nm-space: clamp(1.25rem, 3vw, 2rem);
+  --nm-font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --nm-serif: "Fraunces", Georgia, serif;
+  --navy: #0b2545;
+  --nm-step: 1rem;
+}
+
+html[data-contrast="high"] {
+  --nm-primary: #0b3d66;
+  --nm-primary-dark: #082c4a;
+  --nm-accent: #0d5c42;
+  --nm-text-primary: #000000;
+  --nm-text-secondary: #1a1a1a;
+  --nm-text-muted: #2d2d2d;
+  --nm-paper: #ffffff;
+  --nm-bg-start: #ffffff;
+  --nm-bg-end: #ffffff;
+  --nm-line: #1a1a1a;
+  --nm-focus: #000000;
+}
+
+html {
+  font-size: var(--nm-step);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--nm-font);
+  color: var(--nm-text-primary);
+  background: #fafaf8;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid var(--nm-focus);
+  outline-offset: 3px;
+}
+
+.a11y-btn {
+  min-height: 2.5rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--nm-line);
+  border-radius: 999px;
+  background: var(--nm-paper);
+  color: var(--nm-text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.a11y-btn[aria-pressed="true"] {
+  background: var(--nm-primary);
+  border-color: var(--nm-primary);
+  color: #fff;
+}
+
+main {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 2.5rem var(--nm-space) 4rem;
+}
+
+.hero {
+  max-width: 40rem;
+  padding: 1rem 0 2.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.6rem;
+  color: var(--nm-accent);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--nm-text-primary);
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-family: var(--nm-serif);
+  font-weight: 400;
+  font-size: clamp(2rem, 4vw, 2.85rem);
+}
+
+h2 {
+  margin: 0 0 0.7rem;
+  font-size: clamp(1.45rem, 2.4vw, 1.85rem);
+}
+
+h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1.15rem;
+}
+
+.lede,
+.section-intro,
+.moment p,
+.audience-list p,
+.trust p {
+  color: var(--nm-text-secondary);
+}
+
+.lede {
+  margin: 0 0 1.5rem;
+  font-size: 1.15rem;
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.65rem 1.15rem;
+  border: 0;
+  border-radius: 12px;
+  text-decoration: none;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn--primary {
+  background: var(--navy, var(--nm-primary));
+  color: #fff;
+}
+
+.btn--primary:hover {
+  background: var(--nm-primary-dark);
+}
+
+.btn--ghost {
+  background: var(--nm-paper);
+  color: var(--nm-primary);
+  border: 1px solid var(--nm-primary);
+}
+
+.moments,
+.audience,
+.trust {
+  padding: 1.5rem 0 0.5rem;
+}
+
+.moment-list,
+.audience-list {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 800px) {
+  .moment-list,
+  .audience-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.moment,
+.audience-list li,
+.trust {
+  background: var(--nm-paper);
+  border: 1px solid var(--nm-line);
+  border-radius: var(--nm-radius);
+  padding: 1.25rem 1.3rem 1.35rem;
+}
+
+.moment__when {
+  margin: 0 0 0.45rem;
+  color: var(--nm-accent);
+  font-weight: 700;
+}
+
+.trust {
+  margin-top: 2rem;
+}
+
+html[data-contrast="high"] .btn--primary {
+  background: #000;
+  color: #fff;
+}
+
+html[data-contrast="high"] .btn--ghost {
+  border-color: #000;
+  color: #000;
+}
+
+.app-page { max-width: 42rem; }
+
+.app-page__head p {
+  color: var(--nm-text-secondary);
+}
+
+.tone-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.tone-bar select {
+  min-height: 2.4rem;
+  padding: 0.35rem 0.6rem;
+  border: 1.5px solid var(--nm-line);
+  border-radius: 10px;
+  font: inherit;
+}
+
+.thread {
+  min-height: 16rem;
+  max-height: 55vh;
+  overflow: auto;
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.thread-empty,
+.legal p {
+  color: var(--nm-text-secondary);
+}
+
+.bubble,
+.summary-card,
+.consent-card,
+.record-panel {
+  background: var(--nm-paper);
+  border: 1px solid var(--nm-line);
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+}
+
+.bubble--user {
+  justify-self: end;
+  background: #e8f4fd;
+  border-color: #d0e6f6;
+}
+
+.escalation-card {
+  background: #e6f6f4;
+  border: 1px solid #b8e0d8;
+  border-radius: 16px;
+  padding: 1.1rem 1.2rem;
+  color: #0d5c42;
+}
+
+.composer {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.composer textarea,
+.upload-form input,
+.upload-form select {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border: 1.5px solid var(--nm-line);
+  border-radius: 12px;
+  font: inherit;
+}
+
+.consent-card,
+.record-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.visit-list {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.visit-list a,
+.visit-list li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  background: var(--nm-paper);
+  border: 1px solid var(--nm-line);
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.upload-form {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1.2rem 0;
+}
+
+.upload-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.transcript-details {
+  margin: 1.2rem 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.legal { max-width: 40rem; }
+
+html[data-easy-read="on"] {
+  line-height: 1.75;
+}
+
+html[data-easy-read="on"] .bubble,
+html[data-easy-read="on"] .lede {
+  font-size: 1.15rem;
+  max-width: 38rem;
+}
