@@ -39,16 +39,21 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=_default_csrf)
 
 # Production domain(s): always allowed, even when ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS
 # are overridden by environment variables on Railway.
-PRODUCTION_HOSTS = ["neuromedaiversion2-production.up.railway.app"]
+PRODUCTION_HOSTS = [
+    "neuromedaiversion2-production.up.railway.app",
+    "pilot.airamed.org",
+]
 for _host in PRODUCTION_HOSTS:
     if _host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_host)
     if f"https://{_host}" not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(f"https://{_host}")
 
-# Railway (and similar) terminate TLS at the proxy.
+# Railway (and similar) terminate TLS at the proxy. Always trust its
+# X-Forwarded-Proto, even with DEBUG on, so absolute URLs (like the Google
+# OAuth redirect) say https:// in production. Local dev sends no such header.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
@@ -144,6 +149,9 @@ LOGOUT_REDIRECT_URL = "home"
 
 GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
 GOOGLE_OAUTH_CLIENT_SECRET = env("GOOGLE_OAUTH_CLIENT_SECRET", default="")
+# Optional: pin the exact callback URL sent to Google (must match the console character
+# for character), e.g. https://neuromedaiversion2-production.up.railway.app/accounts/google/callback/
+GOOGLE_OAUTH_REDIRECT_URI = env("GOOGLE_OAUTH_REDIRECT_URI", default="")
 
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",

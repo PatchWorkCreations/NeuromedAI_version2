@@ -15,6 +15,10 @@ def google_configured():
 
 
 def google_redirect_uri(request):
+    """The callback Google sends people back to. Must match the Google console exactly."""
+    pinned = getattr(settings, "GOOGLE_OAUTH_REDIRECT_URI", "")
+    if pinned:
+        return pinned
     return request.build_absolute_uri(reverse("accounts:google_callback"))
 
 
