@@ -108,6 +108,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "accounts.context_processors.greeting",
+                "accounts.context_processors.recaptcha_key",
             ],
         },
     },
@@ -152,6 +153,11 @@ GOOGLE_OAUTH_CLIENT_SECRET = env("GOOGLE_OAUTH_CLIENT_SECRET", default="")
 # Optional: pin the exact callback URL sent to Google (must match the console character
 # for character), e.g. https://neuromedaiversion2-production.up.railway.app/accounts/google/callback/
 GOOGLE_OAUTH_REDIRECT_URI = env("GOOGLE_OAUTH_REDIRECT_URI", default="")
+
+# reCAPTCHA v3 (classic) on sign-up, log-in and forgot password. Both keys empty = off.
+RECAPTCHA_SITE_KEY = env("RECAPTCHA_SITE_KEY", default="")
+RECAPTCHA_SECRET_KEY = env("RECAPTCHA_SECRET_KEY", default="")
+RECAPTCHA_MIN_SCORE = env.float("RECAPTCHA_MIN_SCORE", default=0.5)
 
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",

@@ -2,10 +2,14 @@ from django import forms
 from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm
 
+from .recaptcha import RecaptchaFormMixin
+
 User = get_user_model()
 
 
-class LoginForm(AuthenticationForm):
+class LoginForm(RecaptchaFormMixin, AuthenticationForm):
+    recaptcha_action = "login"
+
     username = forms.CharField(
         label="Email address",
         widget=forms.EmailInput(attrs={
@@ -29,6 +33,7 @@ class LoginForm(AuthenticationForm):
     }
 
     def clean(self):
+        self.check_recaptcha()
         email = (self.cleaned_data.get("username") or "").strip()
         password = self.cleaned_data.get("password")
         if not email or not password:
@@ -48,7 +53,9 @@ class LoginForm(AuthenticationForm):
         return self.cleaned_data
 
 
-class SignupForm(forms.Form):
+class SignupForm(RecaptchaFormMixin, forms.Form):
+    recaptcha_action = "signup"
+
     first_name = forms.CharField(
         label="First name",
         max_length=150,
@@ -119,6 +126,7 @@ class SignupForm(forms.Form):
         return username
 
     def clean(self):
+        self.check_recaptcha()
         cleaned = super().clean()
         p1 = cleaned.get("password1")
         p2 = cleaned.get("password2")
@@ -145,10 +153,15 @@ class SignupForm(forms.Form):
         return user
 
 
-class StyledPasswordResetForm(PasswordResetForm):
+class StyledPasswordResetForm(RecaptchaFormMixin, PasswordResetForm):
+    recaptcha_action = "password_reset"
     email = forms.EmailField(
         widget=forms.EmailInput(attrs={"class": "field-input", "placeholder": "you@email.com"}),
     )
+
+    def clean(self):
+        self.check_recaptcha()
+        return super().clean()
 
 
 class StyledSetPasswordForm(SetPasswordForm):

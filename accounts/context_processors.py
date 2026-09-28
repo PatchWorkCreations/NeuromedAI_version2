@@ -1,4 +1,11 @@
+from django.conf import settings
+
+from . import recaptcha
 from .greetings import build_greeting
+
+
+def recaptcha_key(request):
+    return {"recaptcha_site_key": settings.RECAPTCHA_SITE_KEY if recaptcha.enabled() else ""}
 
 
 def greeting(request):
