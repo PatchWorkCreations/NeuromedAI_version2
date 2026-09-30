@@ -159,6 +159,14 @@ RECAPTCHA_SITE_KEY = env("RECAPTCHA_SITE_KEY", default="")
 RECAPTCHA_SECRET_KEY = env("RECAPTCHA_SECRET_KEY", default="")
 RECAPTCHA_MIN_SCORE = env.float("RECAPTCHA_MIN_SCORE", default=0.5)
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {"accounts": {"handlers": ["console"], "level": "INFO", "propagate": False}},
+}
+
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
     default="django.core.mail.backends.console.EmailBackend",
