@@ -46,7 +46,7 @@ Sign-up, log-in, Google, record (consent first), chat, visit history, and docume
 - [x] Profile fields: language, profession, referral code
 - [x] Guest vs signed-in: record, chat, and documents require login
 - [ ] Forgot-password email in production (console backend locally)
-- [x] reCAPTCHA v3 on sign-up, log-in and forgot password (`accounts/recaptcha.py`; off when keys are empty)
+- [x] reCAPTCHA v2 checkbox on sign-up, log-in and forgot password (`accounts/recaptcha.py`; off when keys are empty)
 - [ ] Set `RECAPTCHA_SITE_KEY` / `RECAPTCHA_SECRET_KEY` on Railway; add every served domain to the key in the reCAPTCHA admin
 - [ ] Contact form: none in v2 yet — when one is added, use `RecaptchaFormMixin` + `includes/recaptcha.html`
 

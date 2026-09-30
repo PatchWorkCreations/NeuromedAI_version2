@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from . import recaptcha
 
-KEYS = {"RECAPTCHA_SITE_KEY": "site-key", "RECAPTCHA_SECRET_KEY": "secret-key", "RECAPTCHA_MIN_SCORE": 0.5}
+KEYS = {"RECAPTCHA_SITE_KEY": "site-key", "RECAPTCHA_SECRET_KEY": "secret-key"}
 
 
 def google_says(**result):
@@ -20,24 +20,16 @@ def google_says(**result):
 
 @override_settings(**KEYS)
 class RecaptchaVerifyTests(TestCase):
-    def test_human_score_for_the_right_action_passes(self):
-        with google_says(success=True, action="login", score=0.9) as post:
+    def test_ticked_box_passes(self):
+        with google_says(success=True, hostname="localhost") as post:
             self.assertTrue(recaptcha.verify("tok", "login"))
         self.assertEqual(post.call_args.kwargs["data"], {"secret": "secret-key", "response": "tok"})
-
-    def test_low_score_fails(self):
-        with google_says(success=True, action="login", score=0.1):
-            self.assertFalse(recaptcha.verify("tok", "login"))
-
-    def test_token_for_another_action_fails(self):
-        with google_says(success=True, action="signup", score=0.9):
-            self.assertFalse(recaptcha.verify("tok", "login"))
 
     def test_invalid_token_fails(self):
         with google_says(success=False, **{"error-codes": ["invalid-input-response"]}):
             self.assertFalse(recaptcha.verify("tok", "login"))
 
-    def test_missing_token_fails_without_calling_google(self):
+    def test_unticked_box_fails_without_calling_google(self):
         with mock.patch("accounts.recaptcha.requests.post") as post:
             self.assertFalse(recaptcha.verify("", "login"))
         post.assert_not_called()
@@ -57,52 +49,57 @@ class RecaptchaFormTests(TestCase):
         self.user = get_user_model().objects.create_user("pat", "pat@example.com", "Passw0rd!xy")
 
     def test_login_blocked_for_bots(self):
-        with google_says(success=True, action="login", score=0.1):
+        with google_says(success=False):
             r = self.client.post(reverse("accounts:login"), {
                 "username": "pat@example.com", "password": "Passw0rd!xy", "g-recaptcha-response": "tok",
             })
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "not a robot")
+        self.assertContains(r, "I’m not a robot")
         self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_login_works_for_people(self):
-        with google_says(success=True, action="login", score=0.9):
+        with google_says(success=True):
             r = self.client.post(reverse("accounts:login"), {
                 "username": "pat@example.com", "password": "Passw0rd!xy", "g-recaptcha-response": "tok",
             })
         self.assertRedirects(r, reverse("dashboard"))
 
     def test_signup_blocked_for_bots(self):
-        with google_says(success=True, action="signup", score=0.2):
+        with google_says(success=False):
             r = self.client.post(reverse("accounts:signup"), {
                 "first_name": "Bo", "last_name": "T", "email": "bot@example.com", "username": "bot",
                 "password1": "Sp4m!Sp4m!x", "password2": "Sp4m!Sp4m!x", "terms": "on",
                 "g-recaptcha-response": "tok",
             })
-        self.assertContains(r, "not a robot")
+        self.assertContains(r, "I’m not a robot")
         self.assertFalse(get_user_model().objects.filter(username="bot").exists())
 
     def test_password_reset_blocked_for_bots(self):
-        with google_says(success=True, action="password_reset", score=0.1):
+        with google_says(success=False):
             r = self.client.post(reverse("accounts:password_reset"), {
                 "email": "pat@example.com", "g-recaptcha-response": "tok",
             })
-        self.assertContains(r, "not a robot")
+        self.assertContains(r, "I’m not a robot")
         self.assertEqual(len(mail.outbox), 0)
 
     def test_password_reset_works_for_people(self):
-        with google_says(success=True, action="password_reset", score=0.9):
+        with google_says(success=True):
             r = self.client.post(reverse("accounts:password_reset"), {
                 "email": "pat@example.com", "g-recaptcha-response": "tok",
             })
         self.assertRedirects(r, reverse("accounts:password_reset_done"))
         self.assertEqual(len(mail.outbox), 1)
 
-    def test_script_loads_on_auth_pages_with_the_right_action(self):
-        for name, action in (("login", "login"), ("signup", "signup"), ("password_reset", "password_reset")):
+    def test_checkbox_shows_on_auth_pages(self):
+        for name in ("login", "signup", "password_reset"):
             r = self.client.get(reverse(f"accounts:{name}"))
-            self.assertContains(r, "recaptcha/api.js?render=site-key")
-            self.assertContains(r, f'data-recaptcha-action="{action}"')
+            self.assertContains(r, "recaptcha/api.js")
+            self.assertContains(r, 'class="g-recaptcha" data-sitekey="site-key"')
+
+    def test_unticked_login_is_blocked(self):
+        r = self.client.post(reverse("accounts:login"), {"username": "pat@example.com", "password": "Passw0rd!xy"})
+        self.assertContains(r, "I’m not a robot")
+        self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_script_never_loads_inside_the_app(self):
         self.client.force_login(self.user)

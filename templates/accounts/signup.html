@@ -104,8 +104,8 @@
     </label>
     {% if form.terms.errors %}<p class="field-error">{{ form.terms.errors|striptags }}</p>{% endif %}
 
+    {% include "includes/recaptcha.html" %}
     <button type="submit" class="btn-submit">Create my free account</button>
-    {% include "includes/recaptcha.html" with action="signup" %}
   </form>
 
   <p class="or-divider">or sign up with</p>

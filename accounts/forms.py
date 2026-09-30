@@ -8,7 +8,7 @@ User = get_user_model()
 
 
 class LoginForm(RecaptchaFormMixin, AuthenticationForm):
-    recaptcha_action = "login"
+    recaptcha_form = "login"
 
     username = forms.CharField(
         label="Email address",
@@ -54,7 +54,7 @@ class LoginForm(RecaptchaFormMixin, AuthenticationForm):
 
 
 class SignupForm(RecaptchaFormMixin, forms.Form):
-    recaptcha_action = "signup"
+    recaptcha_form = "signup"
 
     first_name = forms.CharField(
         label="First name",
@@ -154,7 +154,7 @@ class SignupForm(RecaptchaFormMixin, forms.Form):
 
 
 class StyledPasswordResetForm(RecaptchaFormMixin, PasswordResetForm):
-    recaptcha_action = "password_reset"
+    recaptcha_form = "password_reset"
     email = forms.EmailField(
         widget=forms.EmailInput(attrs={"class": "field-input", "placeholder": "you@email.com"}),
     )

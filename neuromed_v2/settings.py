@@ -154,10 +154,9 @@ GOOGLE_OAUTH_CLIENT_SECRET = env("GOOGLE_OAUTH_CLIENT_SECRET", default="")
 # for character), e.g. https://neuromedaiversion2-production.up.railway.app/accounts/google/callback/
 GOOGLE_OAUTH_REDIRECT_URI = env("GOOGLE_OAUTH_REDIRECT_URI", default="")
 
-# reCAPTCHA v3 (classic) on sign-up, log-in and forgot password. Both keys empty = off.
+# reCAPTCHA v2 checkbox on sign-up, log-in and forgot password. Both keys empty = off.
 RECAPTCHA_SITE_KEY = env("RECAPTCHA_SITE_KEY", default="")
 RECAPTCHA_SECRET_KEY = env("RECAPTCHA_SECRET_KEY", default="")
-RECAPTCHA_MIN_SCORE = env.float("RECAPTCHA_MIN_SCORE", default=0.5)
 
 LOGGING = {
     "version": 1,

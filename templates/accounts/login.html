@@ -46,8 +46,8 @@
       </div>
     </div>
     <a class="forgot-link" href="{% url 'accounts:password_reset' %}">Forgot password?</a>
+    {% include "includes/recaptcha.html" %}
     <button type="submit" class="btn-submit">Log in to Aira</button>
-    {% include "includes/recaptcha.html" with action="login" %}
   </form>
 
   <p class="or-divider">or continue with</p>

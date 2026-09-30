@@ -534,20 +534,12 @@ html {
 
 .login-row a:hover { text-decoration: underline; }
 
-/* reCAPTCHA v3: Google allows hiding the floating badge when this note is shown instead. */
-.grecaptcha-badge { visibility: hidden; }
-
-.recaptcha-note {
-  margin: 12px 0 0;
-  font-size: 0.78rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.recaptcha-note a {
-  color: inherit;
-  text-decoration: underline;
+/* reCAPTCHA v2 checkbox (Google's widget is a fixed 304px wide) */
+.recaptcha-box {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 16px;
+  min-height: 78px;
 }
 
 @media (max-width: 860px) {

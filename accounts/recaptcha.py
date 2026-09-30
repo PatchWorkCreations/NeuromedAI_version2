@@ -1,13 +1,11 @@
 """
-Google reCAPTCHA v3 (classic, score-based) for public forms that bots target:
-sign-up, log-in, forgot password, and any future contact form.
+Google reCAPTCHA v2 ("I'm not a robot" checkbox) for public forms that bots
+target: sign-up, log-in, forgot password, and any future contact form.
 
-The browser gets a token for a named action; verify() checks it with Google's
-siteverify endpoint and accepts it only if it is valid, was issued for the same
-action, and scores at least RECAPTCHA_MIN_SCORE. With no secret key set
-(local dev, tests) the check is off.
+The checkbox widget puts a token in the form; verify() checks it with Google's
+siteverify endpoint. With no keys set (local dev, tests) the check is off.
 
-Only load the script on these public pages — never on chat, visits or
+Only load the widget on these public pages — never on chat, visits or
 documents, so Google's script never runs next to health information.
 """
 import logging
@@ -20,18 +18,18 @@ logger = logging.getLogger(__name__)
 
 VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
 TOKEN_FIELD = "g-recaptcha-response"
-FAILED_MESSAGE = "We couldn’t confirm you’re not a robot. Please try again in a moment."
+FAILED_MESSAGE = "Please tick “I’m not a robot” and try again."
 
 
 def enabled() -> bool:
     return bool(settings.RECAPTCHA_SITE_KEY and settings.RECAPTCHA_SECRET_KEY)
 
 
-def verify(token: str, action: str, remote_ip: str = "") -> bool:
+def verify(token: str, form_name: str, remote_ip: str = "") -> bool:
     if not enabled():
         return True
     if not token:
-        logger.info("recaptcha action=%s result=missing-token", action)
+        logger.info("recaptcha form=%s result=not-ticked", form_name)
         return False
     data = {"secret": settings.RECAPTCHA_SECRET_KEY, "response": token}
     if remote_ip:
@@ -41,25 +39,21 @@ def verify(token: str, action: str, remote_ip: str = "") -> bool:
         result = r.json()
     except (requests.RequestException, ValueError) as exc:
         # Google unreachable: let people in rather than lock patients out of their account.
-        logger.warning("recaptcha action=%s result=unreachable error=%s", action, type(exc).__name__)
+        logger.warning("recaptcha form=%s result=unreachable error=%s", form_name, type(exc).__name__)
         return True
-    ok = (
-        result.get("success") is True
-        and result.get("action") == action
-        and float(result.get("score", 0)) >= settings.RECAPTCHA_MIN_SCORE
-    )
+    ok = result.get("success") is True
     logger.info(
-        "recaptcha action=%s ok=%s score=%s errors=%s",
-        action, ok, result.get("score"), ",".join(result.get("error-codes", [])),
+        "recaptcha form=%s ok=%s host=%s errors=%s",
+        form_name, ok, result.get("hostname", ""), ",".join(result.get("error-codes", [])),
     )
     return ok
 
 
 class RecaptchaFormMixin:
-    """Add to a Django form and set recaptcha_action; call check_recaptcha() first in clean()."""
+    """Add to a Django form and set recaptcha_form; call check_recaptcha() first in clean()."""
 
-    recaptcha_action = ""
+    recaptcha_form = ""
 
     def check_recaptcha(self):
-        if not verify(self.data.get(TOKEN_FIELD, ""), self.recaptcha_action):
+        if not verify(self.data.get(TOKEN_FIELD, ""), self.recaptcha_form):
             raise forms.ValidationError(FAILED_MESSAGE, code="recaptcha")
