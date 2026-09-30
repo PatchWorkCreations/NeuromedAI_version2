@@ -21,6 +21,7 @@ from datetime import timedelta
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
@@ -34,6 +35,7 @@ from documents.ingest import check as check_upload
 from documents.ingest import ingest as ingest_upload
 
 from .context import build_patient_context
+from .export import build_export, get_owned_answer
 from .guidance import GUIDE_PROMPT, SHARED_IMAGE_NOTE, build_starters, ensure_open_ending, split_follow_ups
 from .inference import classify_mode, infer_use_case
 from .models import ChatMessage, ChatSession
@@ -201,9 +203,10 @@ def send_chat(request):
     if escalation:
         log_escalation(escalation, user=user, session_id=session_key, chat_session=session)
         reply = escalation.response_text
-        ChatMessage.objects.create(session=session, role=ChatMessage.Role.ASSISTANT, content=reply)
+        saved = ChatMessage.objects.create(session=session, role=ChatMessage.Role.ASSISTANT, content=reply)
         # No suggested questions after a safety redirect: the next step is the doctor.
         return Response({
+            "id": saved.pk,
             "reply": reply,
             "tone": tone,
             "mode": mode,
@@ -215,10 +218,11 @@ def send_chat(request):
             "title": session.title,
         })
 
-    ChatMessage.objects.create(
+    saved = ChatMessage.objects.create(
         session=session, role=ChatMessage.Role.ASSISTANT, content=draft_reply, follow_ups=follow_ups,
     )
     return Response({
+        "id": saved.pk,
         "reply": draft_reply,
         "follow_ups": follow_ups,
         "attachments": [_attachment_json(d) for d in shared_docs],
@@ -285,3 +289,10 @@ def delete_conversation(request, conversation_id):
     # Messages go with it. Any EscalationEvent keeps its audit row (FK is SET_NULL).
     conversation.delete()
     return redirect("chat:room")
+
+
+@login_required
+@never_cache
+def print_message(request, message_id):
+    message = get_owned_answer(request.user, message_id)
+    return render(request, "chat/print_message.html", build_export(message, request))

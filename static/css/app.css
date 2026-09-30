@@ -2707,6 +2707,39 @@ html[data-theme="contrast"] .follow-ups button {
   color: #000;
 }
 
+/* Print / Save as PDF under each Aira answer */
+.msg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-top: -0.35rem;
+}
+
+.msg-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.87rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.msg-action:hover {
+  background: var(--teal-soft);
+  color: var(--teal-text);
+}
+
+html[data-theme="contrast"] .msg-action {
+  color: #000;
+  text-decoration: underline;
+}
+
 @media (max-width: 640px) {
   .chat__bar {
     flex-wrap: wrap;

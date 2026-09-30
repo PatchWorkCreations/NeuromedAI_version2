@@ -1,0 +1,44 @@
+<div class="export" style="max-width:640px;margin:0 auto;font-family:Georgia,'Times New Roman',serif;color:#111;line-height:1.55;">
+  <header class="export__head" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #ccc;padding-bottom:12px;margin-bottom:20px;">
+    <img src="{{ logo_url }}" alt="Aira" height="32" style="height:32px;width:auto;">
+    <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#444;text-align:right;">
+      Prepared with Aira<br>{{ prepared_on|date:"j F Y" }}
+    </p>
+  </header>
+
+  {% if question %}
+    <section class="export__question" style="margin-bottom:20px;">
+      <h2 style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#555;margin:0 0 6px;">You asked</h2>
+      <h1 style="font-size:20px;line-height:1.35;margin:0;">{{ question|linebreaksbr }}</h1>
+    </section>
+  {% else %}
+    <h1 style="font-size:20px;margin:0 0 16px;">{{ title }}</h1>
+  {% endif %}
+
+  <section class="export__answer" style="margin-bottom:24px;">
+    <h2 style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#555;margin:0 0 6px;">Aira’s answer</h2>
+    {{ answer_html }}
+  </section>
+
+  {% if doctor_questions %}
+    <section class="export__doctor" style="margin-bottom:24px;">
+      <h2 style="font-size:17px;margin:0 0 10px;">Questions to ask your doctor</h2>
+      <ol style="padding-left:22px;margin:0;">
+        {% for q in doctor_questions %}
+          <li class="export__q" style="margin-bottom:14px;">
+            {{ q }}
+            <div class="export__notes" aria-hidden="true">
+              <div style="border-bottom:1px solid #bbb;height:26px;"></div>
+              <div style="border-bottom:1px solid #bbb;height:26px;"></div>
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+  {% endif %}
+
+  <footer class="export__footer" style="border-top:1px solid #ccc;padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#333;">
+    <p style="margin:0 0 6px;">{{ safety_footer }}</p>
+    {% if show_link %}<p style="margin:0;">Open this conversation in Aira: <a href="{{ conversation_url }}" style="color:#0b6f6f;">{{ conversation_url }}</a></p>{% endif %}
+  </footer>
+</div>

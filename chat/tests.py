@@ -192,6 +192,7 @@ class FollowUpEndToEndTests(TestCase):
         self.assertEqual(data["follow_ups"], ["Why is my pressure high?", "When do I recheck?"])
         self.assertIn("GUIDING THE PATIENT", system)
         saved = ChatMessage.objects.filter(role="assistant").latest("created_at")
+        self.assertEqual(data["id"], saved.pk)
         self.assertEqual(saved.follow_ups, data["follow_ups"])
         self.assertNotIn("NEXT:", saved.content)
 
@@ -202,6 +203,8 @@ class FollowUpEndToEndTests(TestCase):
             r, _ = self._send("Stop taking it.\nNEXT: Can I stop today?")
         self.assertTrue(r.json()["escalated"])
         self.assertNotIn("follow_ups", r.json())
+        saved = ChatMessage.objects.get(pk=r.json()["id"])
+        self.assertEqual((saved.role, saved.content), ("assistant", "Please check with your doctor."))
 
 
 from .guidance import CHECK_INS, GUIDE_PROMPT, ensure_open_ending
@@ -310,3 +313,94 @@ class ImagingGuidanceTests(ChatAttachmentTests):
     def test_pdf_only_does_not_add_the_photo_note(self):
         _, msgs = self._send("", [SimpleUploadedFile("labs.pdf", pdf_bytes(), "application/pdf")])
         self.assertNotIn("follow SCANS AND IMAGING", msgs[0]["content"])
+
+
+from django.core.cache import cache
+
+from .export import doctor_questions, format_answer
+
+ANSWER = (
+    "Talking to your doctor about results\n"
+    "It helps to go in with a short list.\n"
+    "1. **What do these numbers mean for me?**\n"
+    "2. Do I need a repeat test?\n"
+    "- Bring your last report.\n"
+    "Would you like help picking one to start with?"
+)
+
+
+class AnswerExportTestCase(TestCase):
+    def setUp(self):
+        cache.clear()
+        User = get_user_model()
+        self.user = User.objects.create_user("pat", "pat@example.com", "Passw0rd!xy")
+        self.other = User.objects.create_user("sam", "sam@example.com", "Passw0rd!xy")
+        self.session = ChatSession.objects.create(user=self.user, title="Talking about my results")
+        self.question = ChatMessage.objects.create(
+            session=self.session, role="user", content="How can I talk to my doctor about my test results?",
+        )
+        self.answer = ChatMessage.objects.create(
+            session=self.session, role="assistant", content=ANSWER,
+            follow_ups=["When should I call about results?", "Do I need a repeat test?"],
+        )
+        self.client.force_login(self.user)
+
+
+class PrintAnswerTests(AnswerExportTestCase):
+    def url(self, pk=None):
+        return reverse("chat:print_message", args=[pk or self.answer.pk])
+
+    def test_owner_sees_question_answer_questions_and_footer(self):
+        r = self.client.get(self.url())
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "How can I talk to my doctor about my test results?")
+        self.assertContains(r, "It helps to go in with a short list.")
+        self.assertContains(r, "Questions to ask your doctor")
+        self.assertContains(r, "What do these numbers mean for me?")
+        self.assertContains(r, "When should I call about results?")
+        self.assertContains(r, "it does not replace your doctor")
+        self.assertContains(r, "Prepared with Aira")
+        self.assertNotContains(r, "app-shell")
+        self.assertNotContains(r, "**")
+
+    def test_other_user_gets_404(self):
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.get(self.url()).status_code, 404)
+
+    def test_user_messages_are_not_printable(self):
+        self.assertEqual(self.client.get(self.url(self.question.pk)).status_code, 404)
+
+    def test_anonymous_is_sent_to_login(self):
+        self.client.logout()
+        r = self.client.get(self.url())
+        self.assertEqual(r.status_code, 302)
+        self.assertIn(reverse("accounts:login"), r["Location"])
+
+    def test_model_html_is_escaped(self):
+        self.answer.content = "Hello <script>alert(1)</script>\n- <b>bold</b>?"
+        self.answer.follow_ups = ["<img src=x onerror=alert(1)>"]
+        self.answer.save()
+        r = self.client.get(self.url())
+        self.assertNotContains(r, "<script>alert(1)</script>")
+        self.assertNotContains(r, "<img src=x")
+        self.assertContains(r, "&lt;script&gt;alert(1)&lt;/script&gt;")
+
+    def test_chat_page_shows_actions_for_saved_answers(self):
+        r = self.client.get(reverse("chat:conversation", args=[self.session.pk]))
+        self.assertContains(r, f'data-message-id="{self.answer.pk}"')
+        self.assertContains(r, reverse("chat:print_message", args=[self.answer.pk]))
+        self.assertContains(r, "Print / Save as PDF")
+
+
+class DoctorQuestionTests(TestCase):
+    def test_list_questions_then_follow_ups_without_repeats(self):
+        msg = ChatMessage(content=ANSWER, follow_ups=["Do I need a repeat test?", "When should I call?"])
+        self.assertEqual(doctor_questions(msg), [
+            "What do these numbers mean for me?", "Do I need a repeat test?", "When should I call?",
+        ])
+
+    def test_numbered_and_bulleted_lists_render_as_lists(self):
+        html = format_answer(ANSWER)
+        self.assertIn("<h3>Talking to your doctor about results</h3>", html)
+        self.assertIn("<ol><li>What do these numbers mean for me?</li>", html)
+        self.assertIn("<ul><li>Bring your last report.</li></ul>", html)

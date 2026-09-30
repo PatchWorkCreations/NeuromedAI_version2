@@ -64,6 +64,9 @@ Sign-up, log-in, Google, record (consent first), chat, visit history, and docume
 - [x] Chat page (composer, thread, tone selector)
 - [x] Easy Read mode — toggle + auto-on with Geriatric tone
 - [x] Escalation card UI — teal/care, not a red error banner
+- [x] **Print / Save as PDF** under every Aira answer (standalone printable page, owner only, "Questions to ask your doctor" with note lines)
+- [ ] "Email me this" (Resend) — built on branch `feat/share-aira-answer`, held until Resend BAA + `airamed.org` domain verification are done
+- [ ] Later: one-tap "Download PDF" file (reportlab) instead of the browser's print-to-PDF
 
 ### `care_circle`
 

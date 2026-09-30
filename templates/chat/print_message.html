@@ -1,0 +1,51 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{{ title }} · Aira</title>
+  <style>
+    body { margin: 0; padding: 24px 16px 48px; background: #f4f6f6; }
+    .sheet { background: #fff; max-width: 720px; margin: 0 auto; padding: 32px 28px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .export h3 { font-size: 16px; margin: 18px 0 6px; }
+    .export p, .export li { font-size: 16px; }
+    .toolbar { max-width: 720px; margin: 0 auto 16px; display: flex; justify-content: flex-end; gap: 12px; }
+    .toolbar button, .toolbar a {
+      min-height: 44px; padding: 0 18px; border-radius: 999px; font: 600 15px/44px Arial, Helvetica, sans-serif;
+      border: 1px solid #0b6f6f; background: #0b6f6f; color: #fff; cursor: pointer; text-decoration: none;
+    }
+    .toolbar a { background: #fff; color: #0b6f6f; }
+    .toolbar :focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+    @media print {
+      @page { margin: 18mm 16mm; }
+      body { background: #fff; padding: 0; }
+      .sheet { box-shadow: none; padding: 0; max-width: none; border-radius: 0; }
+      .toolbar { display: none !important; }
+      .export, .export * { color: #000 !important; }
+      .export p, .export li { font-size: 12.5pt; }
+      .export h1 { font-size: 16pt; }
+      .export h2, .export h3 { break-after: avoid; page-break-after: avoid; }
+      .export__q, .export__footer { break-inside: avoid; page-break-inside: avoid; }
+      .export a { text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <a href="{% url 'chat:conversation' message.session_id %}">Back to chat</a>
+    <button type="button" id="print-now">Print or save as PDF</button>
+  </div>
+  <main class="sheet">
+    {% include "chat/_answer_export.html" %}
+  </main>
+  <script>
+    (function () {
+      document.getElementById("print-now").addEventListener("click", function () { window.print(); });
+      if (new URLSearchParams(location.search).get("autoprint") === "1") {
+        window.addEventListener("load", function () { setTimeout(function () { window.print(); }, 300); });
+      }
+    })();
+  </script>
+</body>
+</html>

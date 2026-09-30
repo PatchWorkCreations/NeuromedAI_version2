@@ -109,6 +109,28 @@
     scrollToEnd();
   }
 
+  /* Print / Save as PDF under a saved Aira answer (same markup as _message_actions.html). */
+  const PRINT_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>';
+  const printUrl = thread.dataset.printUrl || "";
+
+  function addActions(row, id) {
+    if (!id || !printUrl) return;
+    row.dataset.messageId = id;
+    const box = document.createElement("div");
+    box.className = "msg-actions";
+    box.dataset.messageId = id;
+    const print = document.createElement("a");
+    print.className = "msg-action";
+    print.href = `${printUrl.replace("/0/", `/${id}/`)}?autoprint=1`;
+    print.target = "_blank";
+    print.rel = "noopener";
+    print.setAttribute("aria-label", "Print or save this answer as a PDF (opens in a new tab)");
+    print.innerHTML = `${PRINT_ICON} Print / Save as PDF`;
+    box.appendChild(print);
+    const body = row.querySelector(".msg__body") || row;
+    body.insertBefore(box, body.querySelector(".follow-ups"));
+  }
+
   function nearBottom() {
     return thread.scrollHeight - thread.scrollTop - thread.clientHeight < 120;
   }
@@ -585,9 +607,11 @@
         // Safety redirects appear at once and calmly; no typing effect.
         const row = addBubble("assistant", data.reply, true);
         row.classList.add("is-arriving");
+        addActions(row, data.id);
       } else {
         const row = addBubble("assistant", null, false);
         await typeOut(row.querySelector(".bubble"), data.reply || "");
+        addActions(row, data.id);
         addFollowUps(row, data.follow_ups);
       }
     } catch {

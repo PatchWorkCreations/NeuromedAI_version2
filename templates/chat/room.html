@@ -75,14 +75,16 @@
 
   <div class="chat__scroll" id="thread" data-conversation-id="{{ conversation.pk|default:'' }}"
        data-conversation-url="{% url 'chat:conversation' 0 %}" role="log" aria-live="polite" aria-relevant="additions"
-       data-aira-icon="{% static 'img/icons/aira-heart.png' %}">
+       data-aira-icon="{% static 'img/icons/aira-heart.png' %}"
+       data-print-url="{% url 'chat:print_message' 0 %}">
     <div class="chat__col" id="thread-col">
       {% for message in chat_messages %}
         {% if message.role == "assistant" %}
-          <div class="msg msg--assistant">
+          <div class="msg msg--assistant" data-message-id="{{ message.pk }}">
             <span class="msg__avatar msg__avatar--aira" aria-hidden="true"><img src="{% static 'img/icons/aira-heart.png' %}" alt="" width="28" height="28"></span>
             <div class="msg__body">
               <article class="bubble bubble--assistant"><span class="sr-only">Aira: </span>{{ message.content }}</article>
+              {% include "chat/_message_actions.html" %}
               {% if forloop.last and message.follow_ups %}
                 <div class="follow-ups" aria-label="Suggested next questions">
                   <span class="follow-ups__label">You could ask</span>
@@ -183,7 +185,7 @@
   </div>
 </section>
 </div>
-<script src="{% static 'js/chat.js' %}?v=20260925g"></script>
+<script src="{% static 'js/chat.js' %}?v=20260930a"></script>
 <script>
   (function () {
     var form = document.getElementById("chat-form");
