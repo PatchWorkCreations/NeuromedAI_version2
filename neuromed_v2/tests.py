@@ -1,7 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.core import mail
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
+from neuromed_v2.mail import MailNotConfiguredError, email_ready, send_html_email
 from visits.models import VisitRecording
 from visits.templatetags.visit_extras import summary_format, summary_preview
 
@@ -43,3 +45,33 @@ class SummaryFilterTests(TestCase):
 
     def test_format_escapes_html(self):
         self.assertIn("&lt;script&gt;", summary_format("Key points\n<script>x</script>."))
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="Aira <no-reply@example.org>",
+)
+class SendHtmlEmailTests(SimpleTestCase):
+    def test_sends_one_html_message(self):
+        send_html_email(to=["pat@example.com"], subject="Hello", html_body="<p>Hi</p>", reply_to=["help@example.org"])
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ["pat@example.com"])
+        self.assertEqual(sent.from_email, "Aira <no-reply@example.org>")
+        self.assertEqual(sent.reply_to, ["help@example.org"])
+        self.assertEqual(sent.content_subtype, "html")
+
+    def test_blank_recipients_are_dropped(self):
+        send_html_email(to=["  ", "pat@example.com ", ""], subject="Hello", html_body="<p>Hi</p>")
+        self.assertEqual(mail.outbox[0].to, ["pat@example.com"])
+
+    def test_no_recipients_raises(self):
+        with self.assertRaises(MailNotConfiguredError):
+            send_html_email(to=["", "  "], subject="Hello", html_body="<p>Hi</p>")
+        self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(DEFAULT_FROM_EMAIL="")
+    def test_missing_from_address_raises(self):
+        self.assertFalse(email_ready())
+        with self.assertRaises(MailNotConfiguredError):
+            send_html_email(to=["pat@example.com"], subject="Hello", html_body="<p>Hi</p>")

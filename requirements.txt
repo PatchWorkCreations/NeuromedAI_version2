@@ -1,38 +1,41 @@
 # Core
-Django==5.0.9
-djangorestframework==3.15.2
+Django==5.2.17
+djangorestframework==3.17.2
 psycopg2-binary==2.9.9
 dj-database-url==2.3.0
 django-environ==0.11.2
-python-dotenv==1.0.1
-gunicorn==21.2.0
-whitenoise==6.7.0
+python-dotenv==1.2.2
+gunicorn==23.0.0
+whitenoise==6.9.0
 
 # Realtime (recording / live transcript)
-channels==4.1.0
+channels==4.3.2
 websockets==15.0.1
-asgiref==3.8.1
+asgiref==3.9.2
 
 # AI
 openai==1.109.1
 
 # Auth
-msal==1.31.1
-PyJWT==2.9.0
-cryptography==43.0.3
+msal==1.39.0
+PyJWT==2.15.0
+cryptography==50.0.2
 
 # Document ingestion (ported from v1 — Keep list)
 PyMuPDF==1.24.11
 python-docx==1.1.2
 pytesseract==0.3.13
-Pillow==10.4.0
+Pillow==12.3.0
 beautifulsoup4==4.12.3
 
 # Web payments (Square — ported from v1)
 squareup==37.1.1.20240717
 
+# Outbound email — Amazon SES via IAM role (installs boto3/botocore)
+django-ses==4.8.0
+
 # Utilities
-requests==2.32.3
+requests==2.33.0
 qrcode==8.2
 reportlab==4.2.5
 

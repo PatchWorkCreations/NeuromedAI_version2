@@ -166,11 +166,39 @@ LOGGING = {
     "loggers": {"accounts": {"handlers": ["console"], "level": "INFO", "propagate": False}},
 }
 
-EMAIL_BACKEND = env(
-    "EMAIL_BACKEND",
-    default="django.core.mail.backends.console.EmailBackend",
+# --- Outbound email: Amazon SES (django-ses) — see Docs/SES_EMAIL_SETUP.md ---
+# On AWS (ECS/etc.) credentials come from the task IAM role — no access keys.
+# Do not add AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY settings here.
+ENVIRONMENT = env("ENVIRONMENT", default="dev")
+
+# The From address must be a verified SES identity.
+_default_from_by_env = (
+    "support@airamed.org" if ENVIRONMENT == "prod" else "support-dev@airamed.org"
 )
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Aira <no-reply@neuromedai.org>")
+CONTACT_ADMIN_EMAIL = env("CONTACT_ADMIN_EMAIL", default="").strip() or _default_from_by_env
+DEFAULT_FROM_EMAIL = (
+    (env("DEFAULT_FROM_EMAIL", default="") or _default_from_by_env)
+    .strip()
+    .strip('"')
+    .strip("'")
+)
+
+# Region: DevOps sets AWS_REGION; AWS_SES_REGION_NAME also accepted.
+AWS_SES_REGION_NAME = (
+    env("AWS_SES_REGION_NAME", default="")
+    or env("AWS_REGION", default="")
+    or env("AWS_DEFAULT_REGION", default="")
+).strip()
+AWS_SES_REGION_ENDPOINT = (
+    f"email.{AWS_SES_REGION_NAME}.amazonaws.com" if AWS_SES_REGION_NAME else ""
+)
+
+# EMAIL_USE_CONSOLE=1 prints mail to the terminal (local laptop, no IAM role).
+_force_console = env("EMAIL_USE_CONSOLE", default="").strip().lower() in {"1", "true", "yes"}
+if AWS_SES_REGION_NAME and not _force_console:
+    EMAIL_BACKEND = "django_ses.SESBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -182,11 +210,16 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 # Compress for production, but avoid filename hashing so the PWA manifest
 # and service-worker shell list keep stable /static/... URLs.
-STATICFILES_STORAGE = (
-    "django.contrib.staticfiles.storage.StaticFilesStorage"
-    if DEBUG
-    else "whitenoise.storage.CompressedStaticFilesStorage"
-)
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG
+            else "whitenoise.storage.CompressedStaticFilesStorage"
+        ),
+    },
+}
 WHITENOISE_USE_FINDERS = DEBUG
 WHITENOISE_MANIFEST_STRICT = False
 

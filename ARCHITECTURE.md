@@ -18,12 +18,13 @@ Aira captures a doctor's visit, explains it in plain language and the patient's 
 | Web payments | Square | Reused from v1 |
 | iOS payments | Not used — PWA only | StoreKit stays out unless a native iOS decision is reopened |
 | Auth | Django auth + Google OAuth + Microsoft MSAL | Reused from v1 |
+| Outbound email | Amazon SES via `django-ses` (boto3) | All mail goes through `neuromed_v2/mail.py:send_html_email()`. Credentials come from the AWS task IAM role — no access keys in settings. SES turns on only when `AWS_REGION` is set; otherwise mail prints to the console. Setup and DevOps checklist: `Docs/SES_EMAIL_SETUP.md`. Keep patient details out of email bodies — link back to the app |
 | Deployment | Procfile + gunicorn + whitenoise (Heroku/Railway-style) | Reused pattern from v1 |
 
 ## Open decisions this architecture assumes will get answered early
 
 - **Client shape: PWA (decided).** Aira ships as an installable Progressive Web App — no native iOS shell and no StoreKit in `billing`. Known constraint: Safari PWAs cannot keep recording once the screen locks or the app loses focus; the Record UI should warn patients to keep the screen awake during a visit. Revisit only if pilot data shows that constraint blocks real visits.
-- **Cloud host: Railway (decided for this build).** Production Postgres via Railway’s Postgres plugin (`DATABASE_URL`). Media/object storage for audio + uploads still needs a Railway volume or an S3-compatible bucket on the same compliance story — wire that before pilot patient files are stored. Local and production databases are PostgreSQL only (see CLAUDE.md boundary #6) — never SQLite.
+- **Cloud host: app on AWS, database on Railway.** The Django app runs on AWS (ECS Fargate, same pattern as AiraMed) so it can use the task IAM role for Amazon SES. Production Postgres stays on Railway’s Postgres plugin, reached from AWS through `DATABASE_URL` with `DATABASE_SSL_REQUIRE=True`. Media/object storage for audio + uploads still needs a Railway volume or an S3-compatible bucket on the same compliance story — wire that before pilot patient files are stored. Local and production databases are PostgreSQL only (see CLAUDE.md boundary #6) — never SQLite.
 - **Translation vendor.**
 
 ## App structure
