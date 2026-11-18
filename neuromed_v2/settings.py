@@ -92,6 +92,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "neuromed_v2.frame_policy.AllowInternalWorkspaceFrameMiddleware",  # lets Internal Workspace frame this site (Open inside)
 ]
 
 ROOT_URLCONF = "neuromed_v2.urls"
